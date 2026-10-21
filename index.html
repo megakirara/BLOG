@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#070720">
-<title>🍄 ( ´ᯅ` ) のひみつ日記 🪐</title>
+<title>KINOKO-BLOG</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 :root {
@@ -21,8 +23,6 @@
 }
 
 html {
-  min-height: 100%;
-  background-color: var(--bg);
   scroll-behavior: smooth;
 }
 
@@ -32,31 +32,19 @@ body {
   overflow-x: hidden;
   color: #f8edff;
   background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(7, 7, 32, 0.40), rgba(7, 7, 32, 0.55)),
+    url("files/neon_back.jpg");
+  background-repeat: no-repeat, repeat;
+  background-attachment: fixed, fixed;
+  background-position: center, center;
+  background-size: auto, 888px auto;
   font-family:
     "Hiragino Kaku Gothic ProN",
     "Yu Gothic",
     Meiryo,
     sans-serif;
   text-align: center;
-}
-
-a {
-  color: inherit;
-}
-
-#background-image {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-color: var(--bg);
-  background-image:
-    linear-gradient(rgba(7, 7, 32, 0.30), rgba(7, 7, 32, 0.40)),
-    url("files/neon_back.jpg");
-  background-repeat: no-repeat, repeat;
-  background-attachment: fixed, fixed;
-  background-position: center, center;
-  background-size: auto, 888px auto;
 }
 
 #mycelium,
@@ -79,7 +67,11 @@ a {
   animation: myceliumGlow 9s ease-in-out infinite alternate;
 }
 
-#spore-canvas, #stars {
+#spore-canvas {
+  z-index: 1;
+}
+
+#stars {
   z-index: 1;
 }
 
@@ -91,13 +83,14 @@ a {
 main {
   position: relative;
   z-index: 2;
-  width: min(800px, 92%);
+  width: min(720px, 92%);
   margin: 0 auto;
   padding: 55px 0 65px;
 }
 
+/* 大枠（ピンク） */
 .big-frame {
-  padding: 36px 26px 38px;
+  padding: 34px 26px 36px;
   border: 2px solid #ff7ad9;
   border-radius: 24px;
   background: rgba(8, 6, 32, 0.25);
@@ -110,274 +103,174 @@ main {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(24px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
+/* 瞬くネオンサイン風のタイトル */
 h1 {
-  margin: 0 0 10px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  margin: 0 0 28px;
+  color: #ffe3f7;
+  font-size: clamp(1.5rem, 5.5vw, 2.3rem);
+  line-height: 1.4;
+  text-shadow:
+    0 0 4px #fff,
+    0 0 10px #ff7ad9,
+    0 0 22px #ff3dc8,
+    0 0 44px #ff3dc8,
+    0 0 80px #ff3dc888,
+    0 0 6px #4de1ff66;
+  animation: neonFlicker 4.5s linear infinite;
 }
 
-/* タイトル画像のぼわぁ〜んネオン発光 */
-.header-img {
-  max-width: 100%;
-  height: auto;
-  max-height: 120px;
-  object-fit: contain;
-  animation: ultraSoftRainbowNeon 80s infinite ease-in-out;
-}
-
-@keyframes ultraSoftRainbowNeon {
-  0%, 100% {
-    filter: drop-shadow(0 0 8px #fff) drop-shadow(0 0 18px #ff7ad9) drop-shadow(0 0 32px #ff3dc8);
-    opacity: 0.95;
+@keyframes neonFlicker {
+  0%, 17%, 21%, 24%, 52%, 56%, 80%, 83%, 100% {
+    opacity: 1;
+    color: #ffe3f7;
+    text-shadow:
+      0 0 4px #fff,
+      0 0 10px #ff7ad9,
+      0 0 22px #ff3dc8,
+      0 0 44px #ff3dc8,
+      0 0 80px #ff3dc888,
+      0 0 6px #4de1ff66;
   }
-  20% {
-    filter: drop-shadow(0 0 8px #fff) drop-shadow(0 0 18px #4de1ff) drop-shadow(0 0 32px #00eaff);
+
+  18%, 22%, 54%, 81% {
+    opacity: 0.55;
+    color: #c98ab5;
+    text-shadow:
+      0 0 2px #ff7ad966,
+      0 0 6px #ff7ad944;
+  }
+
+  19%, 23%, 55%, 82% {
     opacity: 0.9;
-  }
-  40% {
-    filter: drop-shadow(0 0 8px #fff) drop-shadow(0 0 18px #b6ff5c) drop-shadow(0 0 32px #82ff28);
-    opacity: 0.95;
-  }
-  60% {
-    filter: drop-shadow(0 0 8px #fff) drop-shadow(0 0 18px #ffe84a) drop-shadow(0 0 32px #ffcc00);
-    opacity: 0.9;
-  }
-  80% {
-    filter: drop-shadow(0 0 8px #fff) drop-shadow(0 0 18px #b68cff) drop-shadow(0 0 32px #924dff);
-    opacity: 0.95;
+    color: #ffd0f0;
+    text-shadow:
+      0 0 3px #fff,
+      0 0 8px #ff7ad9,
+      0 0 16px #ff3dc8;
   }
 }
 
-.sub-title {
-  color: var(--cyan);
-  font-size: 0.95rem;
-  letter-spacing: 0.08em;
-  margin-bottom: 28px;
-  text-shadow: 0 0 8px #4de1ff88;
+/* 読み込み中・空・エラーのメッセージ */
+.message {
+  margin: 10px 0;
+  color: #e7dcff;
+  font-weight: bold;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
 }
 
-/* --- 日記投稿フォーム --- */
-.diary-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 40px;
+.message.is-error {
+  color: #ff7a7a;
+  text-shadow: 0 0 10px #ff7a7a88;
+}
+
+/* 投稿カード：1枚ずつ枠の色が違う（外枠のピンクは使わない） */
+#posts-container {
+  display: grid;
+  gap: 22px;
   text-align: left;
 }
 
-.input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.input-label {
-  color: var(--pink);
-  font-size: 0.9rem;
-  font-weight: bold;
-  text-shadow: 0 0 6px var(--pink);
-}
-
-.diary-input, .diary-textarea {
-  width: 100%;
-  padding: 14px 16px;
-  border: 1.5px solid var(--purple);
-  border-radius: 12px;
-  background: rgba(8, 8, 32, 0.65);
-  color: #f8edff;
-  font-size: 1rem;
-  font-family: inherit;
-  outline: none;
-  box-shadow: inset 0 0 10px rgba(182, 140, 255, 0.15);
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.diary-input:focus, .diary-textarea:focus {
-  border-color: var(--cyan);
-  box-shadow: 0 0 12px var(--cyan), inset 0 0 10px rgba(77, 225, 255, 0.2);
-}
-
-.diary-textarea {
-  min-height: 120px;
-  resize: vertical;
-  line-height: 1.7;
-}
-
-.post-button {
-  --btn-color: var(--lime);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 52px;
-  padding: 12px;
-  border: 2px solid var(--btn-color);
-  border-radius: 12px;
-  background: rgba(8, 8, 32, 0.75);
-  color: #ffffff;
-  font-size: 1.05rem;
-  font-weight: bold;
-  letter-spacing: 0.06em;
-  cursor: pointer;
-  text-shadow: 0 0 8px var(--btn-color);
-  box-shadow:
-    0 0 10px color-mix(in srgb, var(--btn-color) 50%, transparent),
-    inset 0 0 8px color-mix(in srgb, var(--btn-color) 25%, transparent);
-  transition: transform 0.2s, box-shadow 0.2s, background 0.2s, color 0.2s;
-}
-
-.post-button:hover {
-  color: #070720;
-  background: var(--btn-color);
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 0 18px var(--btn-color), 0 0 32px var(--btn-color);
-}
-
-/* --- 投稿ログ（一覧） --- */
-.diary-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  text-align: left;
-}
-
-.diary-card {
-  padding: 20px;
-  border: 1.5px solid var(--purple);
+.post-card {
+  --card-color: #62f7ff;
+  padding: 22px 20px;
+  border: 2px solid var(--card-color);
   border-radius: 16px;
   background: rgba(8, 8, 32, 0.45);
-  box-shadow: 0 0 12px rgba(182, 140, 255, 0.2);
+  box-shadow:
+    0 0 12px color-mix(in srgb, var(--card-color) 60%, transparent),
+    inset 0 0 15px color-mix(in srgb, var(--card-color) 20%, transparent);
   backdrop-filter: blur(2px);
-  position: relative;
-  animation: fadeIn 0.8s ease;
+  transition:
+    transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    box-shadow 0.3s ease;
 }
 
-.diary-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px dashed #b68cff55;
-  padding-bottom: 8px;
-  margin-bottom: 12px;
+.post-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 0 20px var(--card-color),
+    0 0 35px color-mix(in srgb, var(--card-color) 60%, transparent);
 }
 
-.diary-date {
-  color: var(--yellow);
-  font-size: 0.85rem;
-  font-weight: bold;
-  text-shadow: 0 0 6px #ffe84a88;
-}
+.post-card:nth-child(6n + 1) { --card-color: #62f7ff; }
+.post-card:nth-child(6n + 2) { --card-color: #b6ff5c; }
+.post-card:nth-child(6n + 3) { --card-color: #b68cff; }
+.post-card:nth-child(6n + 4) { --card-color: #ffb85c; }
+.post-card:nth-child(6n + 5) { --card-color: #ffe84a; }
+.post-card:nth-child(6n + 6) { --card-color: #ff7a7a; }
 
-.diary-delete-btn {
-  background: none;
-  border: none;
-  color: #ff7ad9aa;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: color 0.2s;
-}
-
-.diary-delete-btn:hover {
-  color: #ff3dc8;
-}
-
-.diary-card-title {
-  color: #ffffff;
-  font-size: 1.15rem;
+.post-date {
   margin: 0 0 8px;
-  text-shadow: 0 0 8px var(--cyan);
+  color: var(--yellow);
+  font-family: monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
 }
 
-.diary-card-body {
+.post-card h3 {
+  margin: 0 0 14px;
+  color: #fff;
+  font-size: 1.2rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  text-shadow: 0 0 12px var(--card-color);
+}
+
+.post-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 0 14px;
+  border: 1px solid color-mix(in srgb, var(--card-color) 60%, transparent);
+  border-radius: 10px;
+}
+
+.post-content {
+  margin: 0;
   color: #f0eaff;
-  font-size: 0.95rem;
-  line-height: 1.8;
+  line-height: 1.9;
   white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.no-diary {
-  color: #b68cffaa;
-  text-align: center;
-  padding: 30px 0;
-  font-style: italic;
-}
-
-.back-link {
-  display: inline-block;
-  margin-top: 36px;
-  padding: 10px 22px;
-  border: 1.5px solid var(--purple);
-  border-radius: 20px;
-  color: #d8b4fe;
-  text-decoration: none;
-  background: rgba(8, 8, 32, 0.5);
-  box-shadow: 0 0 10px #b68cff44;
-  transition: transform 0.2s, color 0.2s, background 0.2s, box-shadow 0.2s;
-}
-
-.back-link:hover {
-  color: white;
-  background: rgba(182, 140, 255, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 0 15px var(--purple);
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 600px) {
-  main { padding-top: 25px; }
-  .big-frame { padding: 26px 16px 28px; }
-  .header-img { max-height: 90px; }
-}
+  main {
+    padding-top: 25px;
+  }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+  .big-frame {
+    padding: 24px 14px 28px;
+  }
+
+  .post-card {
+    padding: 18px 14px;
   }
 }
 </style>
 </head>
 
 <body>
-<div id="background-image" aria-hidden="true"></div>
 <div id="mycelium" aria-hidden="true"></div>
 <div id="stars" aria-hidden="true"></div>
 <canvas id="spore-canvas" aria-hidden="true"></canvas>
 
 <main>
   <section class="big-frame">
-    <!-- ヘッダー（タイトル画像が無い場合はテキストを表示） -->
-    <h1>
-      <img src="files/kinoko_dosei.png" alt="ひみつ日記" class="header-img" onerror="this.outerHTML='<span style=\'font-size:2rem;color:#ffe3f7;\'>🍄( ´ᯅ` )日記🪐</span>'">
-    </h1>
-    <p class="sub-title">役に立つものは、たぶん書かれません。( ´ᯅ` )</p>
+    <h1>🍄 KINOKO-BLOG 日記一覧</h1>
 
-    <!-- 投稿フォーム -->
-    <form class="diary-form" id="diaryForm">
-      <div class="input-group">
-        <label class="input-label" for="diaryTitle">✦ タイトル</label>
-        <input type="text" id="diaryTitle" class="diary-input" placeholder="今日のふと思ったこと…" required>
-      </div>
-      
-      <div class="input-group">
-        <label class="input-label" for="diaryContent">✦ 本文</label>
-        <textarea id="diaryContent" class="diary-textarea" placeholder="ここに思いついた順に書いてね🍄" required></textarea>
-      </div>
-
-      <button type="submit" class="post-button">🍄 庭に生やす（投稿）</button>
-    </form>
-
-    <!-- 日記一覧 -->
-    <div class="diary-list" id="diaryList">
-      <!-- ここに投稿した日記が自動で並ぶよ -->
-    </div>
-
-    <div>
-      <a href="index.html" class="back-link">🍄 帰る</a>
+    <div id="posts-container" aria-live="polite">
+      <p class="message">読み込み中... ⏳</p>
     </div>
   </section>
 </main>
@@ -385,29 +278,173 @@ h1 {
 <script>
 "use strict";
 
-const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+/* ---------------------------------------------------------
+   記事の読み込みと表示
+--------------------------------------------------------- */
 
-// 背景の胞子パーティクル
+const SUPABASE_URL = 'https://oqfqpzslduwynckdpqqx.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_1O773HFiGqD8A3FOKj5dSA_K2hVYUMh';
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const container = document.getElementById('posts-container');
+
+function showMessage(text, isError) {
+  const p = document.createElement('p');
+  p.className = 'message' + (isError ? ' is-error' : '');
+  p.textContent = text;
+  container.replaceChildren(p);
+}
+
+/* 新しい順に並べる（created_at があれば日付、なければ id の大きい順） */
+function sortNewestFirst(posts) {
+  const list = [...posts];
+
+  if (list.some((post) => post.created_at)) {
+    list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  } else if (list.some((post) => post.id !== undefined && post.id !== null)) {
+    list.sort((a, b) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0));
+  }
+
+  return list;
+}
+
+function formatDate(value) {
+  if (!value) return '';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+
+  return `${y}.${m}.${d}`;
+}
+
+/* 画像のURLは http / https のものだけ使う */
+function safeImageUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:'
+      ? parsed.href
+      : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function buildPostCard(post) {
+  const card = document.createElement('article');
+  card.className = 'post-card';
+
+  const dateText = formatDate(post.created_at);
+
+  if (dateText) {
+    const date = document.createElement('p');
+    date.className = 'post-date';
+    date.textContent = dateText;
+    card.appendChild(date);
+  }
+
+  /* 文字は textContent で入れるので、HTMLとして実行されない */
+  const title = document.createElement('h3');
+  title.textContent = post.title || '';
+  card.appendChild(title);
+
+  const imageUrl = post.image_url ? safeImageUrl(post.image_url) : null;
+
+  if (imageUrl) {
+    const img = document.createElement('img');
+    img.className = 'post-image';
+    img.src = imageUrl;
+    img.alt = post.title || '';
+    img.loading = 'lazy';
+
+    img.addEventListener('error', () => {
+      img.remove();
+    });
+
+    card.appendChild(img);
+  }
+
+  const content = document.createElement('p');
+  content.className = 'post-content';
+  content.textContent = post.content || '';
+  card.appendChild(content);
+
+  return card;
+}
+
+async function fetchPosts() {
+  const { data: posts, error } = await supabaseClient
+    .from('posts')
+    .select('*');
+
+  if (error) {
+    showMessage('❌ データの取得に失敗しました: ' + error.message, true);
+    return;
+  }
+
+  if (!posts || posts.length === 0) {
+    showMessage('まだ投稿がありません。', false);
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+
+  sortNewestFirst(posts).forEach((post) => {
+    fragment.appendChild(buildPostCard(post));
+  });
+
+  container.replaceChildren(fragment);
+}
+
+fetchPosts();
+
+/* ---------------------------------------------------------
+   見た目の演出（トップページと同じ）
+--------------------------------------------------------- */
+
+/* 🍄 胞子のアニメーション */
 (() => {
   const canvas = document.getElementById("spore-canvas");
-  if (!canvas) return;
   const ctx = canvas.getContext("2d");
+
   if (!ctx) return;
 
-  let width = 0, height = 0, spores = [], mouseX = 0, mouseY = 0;
-  const colors = ["#ff7ad9", "#4de1ff", "#ffe84a", "#b68cff", "#b6ff5c"];
+  let width = 0;
+  let height = 0;
+  let spores = [];
+  let mouseX = 0;
+  let mouseY = 0;
+
+  const colors = [
+    "#ff7ad9",
+    "#4de1ff",
+    "#ffe84a",
+    "#b68cff",
+    "#b6ff5c"
+  ];
 
   function resize() {
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
+
     width = window.innerWidth;
     height = window.innerHeight;
+
     canvas.width = Math.round(width * ratio);
     canvas.height = Math.round(height * ratio);
     canvas.style.width = width + "px";
     canvas.style.height = height + "px";
+
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
 
-    const count = Math.min(180, Math.max(60, Math.floor((width * height) / 8500)));
+    const count = Math.min(
+      180,
+      Math.max(60, Math.floor((width * height) / 8500))
+    );
+
     spores = Array.from({ length: count }, () => createSpore(true));
   }
 
@@ -426,47 +463,66 @@ const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").match
 
   function animate() {
     ctx.clearRect(0, 0, width, height);
+
     for (const spore of spores) {
       spore.phase += 0.015;
       spore.x += spore.drift + Math.sin(spore.phase) * 0.12;
       spore.y -= spore.speed;
-      if (spore.y < -10) Object.assign(spore, createSpore(false));
+
+      if (spore.y < -10) {
+        Object.assign(spore, createSpore(false));
+      }
+
       if (spore.x < -10) spore.x = width + 10;
       if (spore.x > width + 10) spore.x = -10;
+
+      const parallaxX = mouseX * 0.012;
+      const parallaxY = mouseY * 0.012;
 
       ctx.globalAlpha = spore.alpha;
       ctx.fillStyle = spore.color;
       ctx.shadowBlur = 8;
       ctx.shadowColor = spore.color;
+
       ctx.beginPath();
-      ctx.arc(spore.x + mouseX * 0.012, spore.y + mouseY * 0.012, spore.size, 0, Math.PI * 2);
+      ctx.arc(
+        spore.x + parallaxX,
+        spore.y + parallaxY,
+        spore.size,
+        0,
+        Math.PI * 2
+      );
       ctx.fill();
     }
+
     ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
+
     requestAnimationFrame(animate);
   }
 
   window.addEventListener("resize", resize, { passive: true });
-  window.addEventListener("mousemove", (e) => {
-    mouseX = e.clientX - width / 2;
-    mouseY = e.clientY - height / 2;
+
+  window.addEventListener("mousemove", (event) => {
+    mouseX = event.clientX - width / 2;
+    mouseY = event.clientY - height / 2;
   }, { passive: true });
 
   resize();
-  if (!reduceMotion) animate();
+  animate();
 })();
 
-// 背景の星配置
+/* ✦ きらきら星 */
 (() => {
-  const container = document.getElementById("stars");
-  if (!container) return;
+  const starContainer = document.getElementById("stars");
   const fragment = document.createDocumentFragment();
 
   for (let i = 0; i < 50; i++) {
     const star = document.createElement("span");
+
     star.textContent = "✦";
     star.setAttribute("aria-hidden", "true");
+
     Object.assign(star.style, {
       position: "absolute",
       left: Math.random() * 100 + "%",
@@ -478,24 +534,33 @@ const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").match
       animation: `starBlink ${Math.random() * 3 + 2}s ease-in-out infinite alternate`,
       animationDelay: Math.random() * -5 + "s"
     });
+
     fragment.appendChild(star);
   }
 
   const style = document.createElement("style");
-  style.textContent = `@keyframes starBlink { from { opacity: 0.12; } to { opacity: 0.85; } }`;
+  style.textContent = `
+    @keyframes starBlink {
+      from { opacity: 0.12; }
+      to { opacity: 0.85; }
+    }
+  `;
+
   document.head.appendChild(style);
-  container.appendChild(fragment);
+  starContainer.appendChild(fragment);
 })();
 
-// クリック時の星弾け
+/* 🍄 クリックした場所に小さな光 */
 document.addEventListener("click", (event) => {
-  if (reduceMotion) return;
   const colors = ["#ff7ad9", "#4de1ff", "#ffe84a", "#b68cff"];
+
   for (let i = 0; i < 6; i++) {
     const spark = document.createElement("span");
     const angle = Math.PI * 2 * i / 6;
     const distance = 18 + Math.random() * 24;
+
     spark.textContent = "✦";
+
     Object.assign(spark.style, {
       position: "fixed",
       left: event.clientX + "px",
@@ -507,27 +572,33 @@ document.addEventListener("click", (event) => {
       textShadow: "0 0 8px currentColor",
       transition: "transform 550ms ease-out, opacity 550ms ease-out"
     });
+
     document.body.appendChild(spark);
+
     requestAnimationFrame(() => {
-      spark.style.transform = `translate(${Math.cos(angle) * distance}px,${Math.sin(angle) * distance}px)`;
+      spark.style.transform =
+        `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
       spark.style.opacity = "0";
     });
+
     window.setTimeout(() => spark.remove(), 650);
   }
 });
 
-// オンマウスキラキラ
+/* ✦ マウスを乗せるとキラキラ（タイトル） */
 (() => {
-  if (reduceMotion) return;
+  const title = document.querySelector("h1");
   const colors = ["#ff65c3", "#b6ff5c", "#62f7ff", "#b68cff", "#ffb85c", "#ffe84a"];
   const marks = ["✦", "✧", "✨"];
 
-  function sparkle(element) {
-    const rect = element.getBoundingClientRect();
+  function sparkle() {
+    const rect = title.getBoundingClientRect();
     const spark = document.createElement("span");
+
     spark.textContent = marks[Math.floor(Math.random() * marks.length)];
+
     Object.assign(spark.style, {
-      position: "absolute",
+      position: "fixed",
       left: rect.left + Math.random() * rect.width + "px",
       top: rect.top + Math.random() * rect.height + "px",
       zIndex: "99",
@@ -538,108 +609,33 @@ document.addEventListener("click", (event) => {
       opacity: "1",
       transition: "transform 750ms ease-out, opacity 750ms ease-out"
     });
+
     document.body.appendChild(spark);
+
     requestAnimationFrame(() => {
-      spark.style.transform = `translate(${(Math.random() - 0.5) * 44}px, ${-(18 + Math.random() * 32)}px) rotate(${(Math.random() - 0.5) * 180}deg) scale(0.4)`;
+      const dx = (Math.random() - 0.5) * 44;
+      const dy = -(18 + Math.random() * 32);
+      const rot = (Math.random() - 0.5) * 180;
+      spark.style.transform =
+        `translate(${dx}px, ${dy}px) rotate(${rot}deg) scale(0.4)`;
       spark.style.opacity = "0";
     });
+
     window.setTimeout(() => spark.remove(), 800);
   }
 
-  document.addEventListener("mouseover", (e) => {
-    const target = e.target.closest("h1, .post-button, .back-link");
-    if (target && !target.dataset.sparkling) {
-      target.dataset.sparkling = "true";
-      sparkle(target);
-      const timer = setInterval(() => sparkle(target), 120);
-      target.addEventListener("mouseleave", () => {
-        clearInterval(timer);
-        delete target.dataset.sparkling;
-      }, { once: true });
-    }
-  });
-})();
+  let timer = null;
 
-// --- 日記保存・読み込みロジック (LocalStorage) ---
-(() => {
-  const form = document.getElementById("diaryForm");
-  const titleInput = document.getElementById("diaryTitle");
-  const contentInput = document.getElementById("diaryContent");
-  const diaryList = document.getElementById("diaryList");
-
-  const STORAGE_KEY = "kinoko_secret_diaries";
-
-  function getDiaries() {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  }
-
-  function saveDiaries(diaries) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(diaries));
-  }
-
-  function renderDiaries() {
-    const diaries = getDiaries();
-    diaryList.innerHTML = "";
-
-    if (diaries.length === 0) {
-      diaryList.innerHTML = `<div class="no-diary">まだ日記は生えていません🍄<br>上のフォームから投稿してみてね！</div>`;
-      return;
-    }
-
-    diaries.forEach((diary, index) => {
-      const card = document.createElement("div");
-      card.className = "diary-card";
-      card.innerHTML = `
-        <div class="diary-card-header">
-          <span class="diary-date">✦ ${diary.date}</span>
-          <button class="diary-delete-btn" onclick="deleteDiary(${index})">✕ 抜く（削除）</button>
-        </div>
-        <h3 class="diary-card-title">${escapeHTML(diary.title)}</h3>
-        <div class="diary-card-body">${escapeHTML(diary.content)}</div>
-      `;
-      diaryList.appendChild(card);
-    });
-  }
-
-  function escapeHTML(str) {
-    return str
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const title = titleInput.value.trim();
-    const content = contentInput.value.trim();
-
-    if (!title || !content) return;
-
-    const now = new Date();
-    const dateStr = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-    const diaries = getDiaries();
-    diaries.unshift({ title, content, date: dateStr });
-    saveDiaries(diaries);
-
-    titleInput.value = "";
-    contentInput.value = "";
-    renderDiaries();
+  title.addEventListener("mouseenter", () => {
+    if (timer) return;
+    sparkle();
+    timer = window.setInterval(sparkle, 90);
   });
 
-  window.deleteDiary = function(index) {
-    if (confirm("この日記を抜いて（削除して）もいい？")) {
-      const diaries = getDiaries();
-      diaries.splice(index, 1);
-      saveDiaries(diaries);
-      renderDiaries();
-    }
-  };
-
-  renderDiaries();
+  title.addEventListener("mouseleave", () => {
+    window.clearInterval(timer);
+    timer = null;
+  });
 })();
 </script>
 </body>
