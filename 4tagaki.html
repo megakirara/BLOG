@@ -432,7 +432,7 @@ async function fetchDrafts() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    draftListContainer.innerHTML = '<p style="color:#ff7a7a;">取得失敗だじょ…</p>';
+    draftListContainer.innerHTML = '<p style="color:#ff7a7a;">取得失敗だじょ… ' + error.message + '</p>';
     return;
   }
 
