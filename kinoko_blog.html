@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#070720">
+<title>KINOKO-BLOG</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root {
+  --bg: #070720;
+  --pink: #ff7ad9;
+  --cyan: #4de1ff;
+  --yellow: #ffe84a;
+  --purple: #b68cff;
+  --lime: #b6ff5c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: #f8edff;
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(7, 7, 32, 0.40), rgba(7, 7, 32, 0.55)),
+    url("files/neon_back.jpg");
+  background-repeat: no-repeat, repeat;
+  background-attachment: fixed, fixed;
+  background-position: center, center;
+  background-size: auto, 888px auto;
+  font-family:
+    "Hiragino Kaku Gothic ProN",
+    "Yu Gothic",
+    Meiryo,
+    sans-serif;
+  text-align: center;
+}
+
+#mycelium,
+#spore-canvas,
+#stars {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+#mycelium {
+  z-index: 0;
+  opacity: 0.3;
+  background:
+    radial-gradient(ellipse at 15% 25%, #642cff33, transparent 45%),
+    radial-gradient(ellipse at 85% 65%, #ff36bd22, transparent 45%),
+    radial-gradient(ellipse at 50% 90%, #00eaff1a, transparent 40%);
+  animation: myceliumGlow 9s ease-in-out infinite alternate;
+}
+
+#spore-canvas {
+  z-index: 1;
+}
+
+#stars {
+  z-index: 1;
+}
+
+@keyframes myceliumGlow {
+  from { opacity: 0.18; }
+  to { opacity: 0.48; }
+}
+
+main {
+  position: relative;
+  z-index: 2;
+  width: min(720px, 92%);
+  margin: 0 auto;
+  padding: 55px 0 65px;
+}
+
+/* 大枠（ピンク） */
+.big-frame {
+  padding: 34px 26px 36px;
+  border: 2px solid #ff7ad9;
+  border-radius: 24px;
+  background: rgba(8, 6, 32, 0.25);
+  box-shadow:
+    0 0 15px #ff7ad988,
+    0 0 35px #ff3dc844,
+    inset 0 0 25px #b68cff33;
+  backdrop-filter: blur(3px);
+  animation: fadeIn 1.6s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 瞬くネオンサイン風のタイトル */
+h1 {
+  margin: 0 0 28px;
+  color: #ffe3f7;
+  font-size: clamp(1.5rem, 5.5vw, 2.3rem);
+  line-height: 1.4;
+  text-shadow:
+    0 0 4px #fff,
+    0 0 10px #ff7ad9,
+    0 0 22px #ff3dc8,
+    0 0 44px #ff3dc8,
+    0 0 80px #ff3dc888,
+    0 0 6px #4de1ff66;
+  animation: neonFlicker 4.5s linear infinite;
+}
+
+@keyframes neonFlicker {
+  0%, 17%, 21%, 24%, 52%, 56%, 80%, 83%, 100% {
+    opacity: 1;
+    color: #ffe3f7;
+    text-shadow:
+      0 0 4px #fff,
+      0 0 10px #ff7ad9,
+      0 0 22px #ff3dc8,
+      0 0 44px #ff3dc8,
+      0 0 80px #ff3dc888,
+      0 0 6px #4de1ff66;
+  }
+
+  18%, 22%, 54%, 81% {
+    opacity: 0.55;
+    color: #c98ab5;
+    text-shadow:
+      0 0 2px #ff7ad966,
+      0 0 6px #ff7ad944;
+  }
+
+  19%, 23%, 55%, 82% {
+    opacity: 0.9;
+    color: #ffd0f0;
+    text-shadow:
+      0 0 3px #fff,
+      0 0 8px #ff7ad9,
+      0 0 16px #ff3dc8;
+  }
+}
+
+/* 読み込み中・空・エラーのメッセージ */
+.message {
+  margin: 10px 0;
+  color: #e7dcff;
+  font-weight: bold;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.message.is-error {
+  color: #ff7a7a;
+  text-shadow: 0 0 10px #ff7a7a88;
+}
+
+/* 投稿カード：1枚ずつ枠の色が違う（外枠のピンクは使わない） */
+#posts-container {
+  display: grid;
+  gap: 22px;
+  text-align: left;
+}
+
+.post-card {
+  --card-color: #62f7ff;
+  padding: 22px 20px;
+  border: 2px solid var(--card-color);
+  border-radius: 16px;
+  background: rgba(8, 8, 32, 0.45);
+  box-shadow:
+    0 0 12px color-mix(in srgb, var(--card-color) 60%, transparent),
+    inset 0 0 15px color-mix(in srgb, var(--card-color) 20%, transparent);
+  backdrop-filter: blur(2px);
+  transition:
+    transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    box-shadow 0.3s ease;
+}
+
+.post-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 0 20px var(--card-color),
+    0 0 35px color-mix(in srgb, var(--card-color) 60%, transparent);
+}
+
+.post-card:nth-child(6n + 1) { --card-color: #62f7ff; }
+.post-card:nth-child(6n + 2) { --card-color: #b6ff5c; }
+.post-card:nth-child(6n + 3) { --card-color: #b68cff; }
+.post-card:nth-child(6n + 4) { --card-color: #ffb85c; }
+.post-card:nth-child(6n + 5) { --card-color: #ffe84a; }
+.post-card:nth-child(6n + 6) { --card-color: #ff7a7a; }
+
+.post-date {
+  margin: 0 0 8px;
+  color: var(--yellow);
+  font-family: monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+}
+
+.post-card h3 {
+  margin: 0 0 14px;
+  color: #fff;
+  font-size: 1.2rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  text-shadow: 0 0 12px var(--card-color);
+}
+
+.post-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 0 14px;
+  border: 1px solid color-mix(in srgb, var(--card-color) 60%, transparent);
+  border-radius: 10px;
+}
+
+.post-content {
+  margin: 0;
+  color: #f0eaff;
+  line-height: 1.9;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  main {
+    padding-top: 25px;
+  }
+
+  .big-frame {
+    padding: 24px 14px 28px;
+  }
+
+  .post-card {
+    padding: 18px 14px;
+  }
+}
+</style>
+</head>
+
+<body>
+<div id="mycelium" aria-hidden="true"></div>
+<div id="stars" aria-hidden="true"></div>
+<canvas id="spore-canvas" aria-hidden="true"></canvas>
+
+<main>
+  <section class="big-frame">
+    <h1>🍄 KINOKO-BLOG 日記一覧</h1>
+
+    <div id="posts-container" aria-live="polite">
+      <p class="message">読み込み中... ⏳</p>
+    </div>
+  </section>
+</main>
+
+<script>
+"use strict";
+
+/* ---------------------------------------------------------
+   記事の読み込みと表示
+--------------------------------------------------------- */
+
+const SUPABASE_URL = 'https://oqfqpzslduwynckdpqqx.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_1O773HFiGqD8A3FOKj5dSA_K2hVYUMh';
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const container = document.getElementById('posts-container');
+
+function showMessage(text, isError) {
+  const p = document.createElement('p');
+  p.className = 'message' + (isError ? ' is-error' : '');
+  p.textContent = text;
+  container.replaceChildren(p);
+}
+
+/* 新しい順に並べる（created_at があれば日付、なければ id の大きい順） */
+function sortNewestFirst(posts) {
+  const list = [...posts];
+
+  if (list.some((post) => post.created_at)) {
+    list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  } else if (list.some((post) => post.id !== undefined && post.id !== null)) {
+    list.sort((a, b) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0));
+  }
+
+  return list;
+}
+
+function formatDate(value) {
+  if (!value) return '';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+
+  return `${y}.${m}.${d}`;
+}
+
+/* 画像のURLは http / https のものだけ使う */
+function safeImageUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:'
+      ? parsed.href
+      : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function buildPostCard(post) {
+  const card = document.createElement('article');
+  card.className = 'post-card';
+
+  const dateText = formatDate(post.created_at);
+
+  if (dateText) {
+    const date = document.createElement('p');
+    date.className = 'post-date';
+    date.textContent = dateText;
+    card.appendChild(date);
+  }
+
+  /* 文字は textContent で入れるので、HTMLとして実行されない */
+  const title = document.createElement('h3');
+  title.textContent = post.title || '';
+  card.appendChild(title);
+
+  const imageUrl = post.image_url ? safeImageUrl(post.image_url) : null;
+
+  if (imageUrl) {
+    const img = document.createElement('img');
+    img.className = 'post-image';
+    img.src = imageUrl;
+    img.alt = post.title || '';
+    img.loading = 'lazy';
+
+    img.addEventListener('error', () => {
+      img.remove();
+    });
+
+    card.appendChild(img);
+  }
+
+  const content = document.createElement('p');
+  content.className = 'post-content';
+  content.textContent = post.content || '';
+  card.appendChild(content);
+
+  return card;
+}
+
+async function fetchPosts() {
+  const { data: posts, error } = await supabaseClient
+    .from('posts')
+    .select('*');
+
+  if (error) {
+    showMessage('❌ データの取得に失敗しました: ' + error.message, true);
+    return;
+  }
+
+  if (!posts || posts.length === 0) {
+    showMessage('まだ投稿がありません。', false);
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+
+  sortNewestFirst(posts).forEach((post) => {
+    fragment.appendChild(buildPostCard(post));
+  });
+
+  container.replaceChildren(fragment);
+}
+
+fetchPosts();
+
+/* ---------------------------------------------------------
+   見た目の演出（トップページと同じ）
+--------------------------------------------------------- */
+
+/* 🍄 胞子のアニメーション */
+(() => {
+  const canvas = document.getElementById("spore-canvas");
+  const ctx = canvas.getContext("2d");
+
+  if (!ctx) return;
+
+  let width = 0;
+  let height = 0;
+  let spores = [];
+  let mouseX = 0;
+  let mouseY = 0;
+
+  const colors = [
+    "#ff7ad9",
+    "#4de1ff",
+    "#ffe84a",
+    "#b68cff",
+    "#b6ff5c"
+  ];
+
+  function resize() {
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+
+    width = window.innerWidth;
+    height = window.innerHeight;
+
+    canvas.width = Math.round(width * ratio);
+    canvas.height = Math.round(height * ratio);
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+    const count = Math.min(
+      180,
+      Math.max(60, Math.floor((width * height) / 8500))
+    );
+
+    spores = Array.from({ length: count }, () => createSpore(true));
+  }
+
+  function createSpore(randomY = false) {
+    return {
+      x: Math.random() * width,
+      y: randomY ? Math.random() * height : height + 10,
+      size: Math.random() * 2.1 + 0.5,
+      speed: Math.random() * 0.55 + 0.12,
+      drift: (Math.random() - 0.5) * 0.45,
+      alpha: Math.random() * 0.65 + 0.2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      phase: Math.random() * Math.PI * 2
+    };
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, width, height);
+
+    for (const spore of spores) {
+      spore.phase += 0.015;
+      spore.x += spore.drift + Math.sin(spore.phase) * 0.12;
+      spore.y -= spore.speed;
+
+      if (spore.y < -10) {
+        Object.assign(spore, createSpore(false));
+      }
+
+      if (spore.x < -10) spore.x = width + 10;
+      if (spore.x > width + 10) spore.x = -10;
+
+      const parallaxX = mouseX * 0.012;
+      const parallaxY = mouseY * 0.012;
+
+      ctx.globalAlpha = spore.alpha;
+      ctx.fillStyle = spore.color;
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = spore.color;
+
+      ctx.beginPath();
+      ctx.arc(
+        spore.x + parallaxX,
+        spore.y + parallaxY,
+        spore.size,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+
+    requestAnimationFrame(animate);
+  }
+
+  window.addEventListener("resize", resize, { passive: true });
+
+  window.addEventListener("mousemove", (event) => {
+    mouseX = event.clientX - width / 2;
+    mouseY = event.clientY - height / 2;
+  }, { passive: true });
+
+  resize();
+  animate();
+})();
+
+/* ✦ きらきら星 */
+(() => {
+  const starContainer = document.getElementById("stars");
+  const fragment = document.createDocumentFragment();
+
+  for (let i = 0; i < 50; i++) {
+    const star = document.createElement("span");
+
+    star.textContent = "✦";
+    star.setAttribute("aria-hidden", "true");
+
+    Object.assign(star.style, {
+      position: "absolute",
+      left: Math.random() * 100 + "%",
+      top: Math.random() * 100 + "%",
+      color: i % 2 ? "#4de1ff" : "#ff7ad9",
+      fontSize: Math.random() * 9 + 5 + "px",
+      opacity: String(Math.random() * 0.55 + 0.12),
+      textShadow: "0 0 8px currentColor",
+      animation: `starBlink ${Math.random() * 3 + 2}s ease-in-out infinite alternate`,
+      animationDelay: Math.random() * -5 + "s"
+    });
+
+    fragment.appendChild(star);
+  }
+
+  const style = document.createElement("style");
+  style.textContent = `
+    @keyframes starBlink {
+      from { opacity: 0.12; }
+      to { opacity: 0.85; }
+    }
+  `;
+
+  document.head.appendChild(style);
+  starContainer.appendChild(fragment);
+})();
+
+/* 🍄 クリックした場所に小さな光 */
+document.addEventListener("click", (event) => {
+  const colors = ["#ff7ad9", "#4de1ff", "#ffe84a", "#b68cff"];
+
+  for (let i = 0; i < 6; i++) {
+    const spark = document.createElement("span");
+    const angle = Math.PI * 2 * i / 6;
+    const distance = 18 + Math.random() * 24;
+
+    spark.textContent = "✦";
+
+    Object.assign(spark.style, {
+      position: "fixed",
+      left: event.clientX + "px",
+      top: event.clientY + "px",
+      zIndex: "99",
+      pointerEvents: "none",
+      color: colors[i % colors.length],
+      fontSize: "13px",
+      textShadow: "0 0 8px currentColor",
+      transition: "transform 550ms ease-out, opacity 550ms ease-out"
+    });
+
+    document.body.appendChild(spark);
+
+    requestAnimationFrame(() => {
+      spark.style.transform =
+        `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
+      spark.style.opacity = "0";
+    });
+
+    window.setTimeout(() => spark.remove(), 650);
+  }
+});
+
+/* ✦ マウスを乗せるとキラキラ（タイトル） */
+(() => {
+  const title = document.querySelector("h1");
+  const colors = ["#ff65c3", "#b6ff5c", "#62f7ff", "#b68cff", "#ffb85c", "#ffe84a"];
+  const marks = ["✦", "✧", "✨"];
+
+  function sparkle() {
+    const rect = title.getBoundingClientRect();
+    const spark = document.createElement("span");
+
+    spark.textContent = marks[Math.floor(Math.random() * marks.length)];
+
+    Object.assign(spark.style, {
+      position: "fixed",
+      left: rect.left + Math.random() * rect.width + "px",
+      top: rect.top + Math.random() * rect.height + "px",
+      zIndex: "99",
+      pointerEvents: "none",
+      color: colors[Math.floor(Math.random() * colors.length)],
+      fontSize: 9 + Math.random() * 10 + "px",
+      textShadow: "0 0 8px currentColor",
+      opacity: "1",
+      transition: "transform 750ms ease-out, opacity 750ms ease-out"
+    });
+
+    document.body.appendChild(spark);
+
+    requestAnimationFrame(() => {
+      const dx = (Math.random() - 0.5) * 44;
+      const dy = -(18 + Math.random() * 32);
+      const rot = (Math.random() - 0.5) * 180;
+      spark.style.transform =
+        `translate(${dx}px, ${dy}px) rotate(${rot}deg) scale(0.4)`;
+      spark.style.opacity = "0";
+    });
+
+    window.setTimeout(() => spark.remove(), 800);
+  }
+
+  let timer = null;
+
+  title.addEventListener("mouseenter", () => {
+    if (timer) return;
+    sparkle();
+    timer = window.setInterval(sparkle, 90);
+  });
+
+  title.addEventListener("mouseleave", () => {
+    window.clearInterval(timer);
+    timer = null;
+  });
+})();
+</script>
+</body>
+</html>
