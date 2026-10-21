@@ -6,7 +6,6 @@
 <meta name="theme-color" content="#070720">
 <title>BLOG 投稿</title>
 
-<!-- Supabase JS ライブラリ -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -95,7 +94,6 @@ main {
   padding: 55px 0 65px;
 }
 
-/* 大枠（ピンク） */
 .big-frame {
   padding: 34px 26px 36px;
   border: 2px solid #ff7ad9;
@@ -120,7 +118,6 @@ main {
   }
 }
 
-/* 瞬くネオンサイン風のタイトル */
 h1 {
   margin: 0 0 26px;
   color: #ffe3f7;
@@ -167,7 +164,6 @@ h1 {
   }
 }
 
-/* フォーム */
 #post-form {
   display: grid;
   gap: 20px;
@@ -211,7 +207,6 @@ h1 {
   resize: vertical;
 }
 
-/* 画像を選ぶ欄 */
 #imageFile {
   width: 100%;
   padding: 10px 12px;
@@ -249,7 +244,6 @@ h1 {
   color: #070720;
 }
 
-/* 投稿ボタン（黄緑） */
 .submit-btn {
   --btn-color: #b6ff5c;
   display: block;
@@ -291,7 +285,6 @@ h1 {
   cursor: wait;
 }
 
-/* 状態の表示 */
 #status {
   min-height: 1.8em;
   margin: 22px 0 0;
@@ -358,11 +351,6 @@ h1 {
 <script>
 "use strict";
 
-/* ---------------------------------------------------------
-   投稿の処理（中身は元のままです）
---------------------------------------------------------- */
-
-// Supabase接続設定（Publishable keyを貼り付けてね！）
 const SUPABASE_URL = 'https://oqfqpzslduwynckdpqqx.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_1O773HFiGqD8A3FOKj5dSA_K2hVYUMh';
 
@@ -380,7 +368,6 @@ function setStatus(message, type) {
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  // ボタンの連打防止＆ステータス更新
   submitBtn.disabled = true;
   setStatus('投稿中... ⏳');
 
@@ -392,11 +379,9 @@ form.addEventListener('submit', async (e) => {
   let imageUrl = '';
 
   try {
-    // 1. 画像が選択されている場合、Supabase Storageへアップロード
     if (imageFile) {
       setStatus('画像をアップロード中... 📷');
 
-      // ファイル名が重複しないようにタイムスタンプを付与（拡張子を維持）
       const fileExt = imageFile.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
 
@@ -408,7 +393,6 @@ form.addEventListener('submit', async (e) => {
         throw new Error('画像のアップロードに失敗しました: ' + uploadError.message);
       }
 
-      // アップロードした画像の公開URLを取得
       const { data: publicUrlData } = supabaseClient.storage
         .from('blog-images')
         .getPublicUrl(fileName);
@@ -416,7 +400,6 @@ form.addEventListener('submit', async (e) => {
       imageUrl = publicUrlData.publicUrl;
     }
 
-    // 2. データベース（postsテーブル）に投稿データを保存
     setStatus('記事を保存中... 📝');
 
     const { error: insertError } = await supabaseClient
@@ -442,11 +425,6 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-/* ---------------------------------------------------------
-   見た目の演出（トップページと同じ）
---------------------------------------------------------- */
-
-/* 🍄 胞子のアニメーション */
 (() => {
   const canvas = document.getElementById("spore-canvas");
   const ctx = canvas.getContext("2d");
@@ -552,7 +530,6 @@ form.addEventListener('submit', async (e) => {
   animate();
 })();
 
-/* ✦ きらきら星 */
 (() => {
   const container = document.getElementById("stars");
   const fragment = document.createDocumentFragment();
@@ -590,7 +567,6 @@ form.addEventListener('submit', async (e) => {
   container.appendChild(fragment);
 })();
 
-/* 🍄 クリックした場所に小さな光 */
 document.addEventListener("click", (event) => {
   const colors = ["#ff7ad9", "#4de1ff", "#ffe84a", "#b68cff"];
 
@@ -625,7 +601,6 @@ document.addEventListener("click", (event) => {
   }
 });
 
-/* ✦ マウスを乗せるとキラキラ（タイトルと投稿ボタン） */
 (() => {
   const targets = document.querySelectorAll("h1, .submit-btn");
   const colors = ["#ff65c3", "#b6ff5c", "#62f7ff", "#b68cff", "#ffb85c", "#ffe84a"];
