@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#070720">
+<title>BLOG 投稿・4tagaki管理</title>
+
+<!-- Supabase JS ライブラリ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root {
+  --bg: #070720;
+  --pink: #ff7ad9;
+  --cyan: #4de1ff;
+  --yellow: #ffe84a;
+  --purple: #b68cff;
+  --lime: #b6ff5c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: #f8edff;
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(7, 7, 32, 0.40), rgba(7, 7, 32, 0.55)),
+    url("files/neon_back.jpg");
+  background-repeat: no-repeat, repeat;
+  background-attachment: fixed, fixed;
+  background-position: center, center;
+  background-size: auto, 888px auto;
+  font-family:
+    "Hiragino Kaku Gothic ProN",
+    "Yu Gothic",
+    Meiryo,
+    sans-serif;
+  text-align: center;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+#mycelium,
+#spore-canvas,
+#stars {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+#mycelium {
+  z-index: 0;
+  opacity: 0.3;
+  background:
+    radial-gradient(ellipse at 15% 25%, #642cff33, transparent 45%),
+    radial-gradient(ellipse at 85% 65%, #ff36bd22, transparent 45%),
+    radial-gradient(ellipse at 50% 90%, #00eaff1a, transparent 40%);
+  animation: myceliumGlow 9s ease-in-out infinite alternate;
+}
+
+#spore-canvas, #stars {
+  z-index: 1;
+}
+
+@keyframes myceliumGlow {
+  from { opacity: 0.18; }
+  to { opacity: 0.48; }
+}
+
+main {
+  position: relative;
+  z-index: 2;
+  width: min(680px, 92%);
+  margin: 0 auto;
+  padding: 55px 0 65px;
+}
+
+.big-frame {
+  padding: 34px 26px 36px;
+  border: 2px solid #ff7ad9;
+  border-radius: 24px;
+  background: rgba(8, 6, 32, 0.25);
+  box-shadow:
+    0 0 15px #ff7ad988,
+    0 0 35px #ff3dc844,
+    inset 0 0 25px #b68cff33;
+  backdrop-filter: blur(3px);
+  animation: fadeIn 1.6s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+h1 {
+  margin: 0 0 26px;
+  color: #ffe3f7;
+  font-size: clamp(1.5rem, 5.5vw, 2.3rem);
+  line-height: 1.4;
+  text-shadow:
+    0 0 4px #fff,
+    0 0 10px #ff7ad9,
+    0 0 22px #ff3dc8,
+    0 0 44px #ff3dc8,
+    0 0 80px #ff3dc888,
+    0 0 6px #4de1ff66;
+  animation: neonFlicker 4.5s linear infinite;
+}
+
+@keyframes neonFlicker {
+  0%, 17%, 21%, 24%, 52%, 56%, 80%, 83%, 100% {
+    opacity: 1; color: #ffe3f7;
+    text-shadow: 0 0 4px #fff, 0 0 10px #ff7ad9, 0 0 22px #ff3dc8, 0 0 44px #ff3dc8;
+  }
+  18%, 22%, 54%, 81% {
+    opacity: 0.55; color: #c98ab5; text-shadow: 0 0 2px #ff7ad966;
+  }
+}
+
+#login-form, #post-form {
+  display: grid;
+  gap: 20px;
+  text-align: left;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field label {
+  color: var(--cyan);
+  font-size: 0.95rem;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 10px #4de1ff66;
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--yellow);
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-shadow: 0 0 8px rgba(255, 232, 74, 0.4);
+}
+
+.checkbox-field input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--pink);
+  cursor: pointer;
+}
+
+#email, #password, #title, #content {
+  width: 100%;
+  padding: 12px 13px;
+  border: 1.5px solid #b68cffaa;
+  border-radius: 9px;
+  background: rgba(8, 8, 32, 0.60);
+  color: #fff;
+  line-height: 1.7;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#email:focus, #password:focus, #title:focus, #content:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 12px #4de1ff66;
+}
+
+#content {
+  min-height: 150px;
+  resize: vertical;
+}
+
+#imageFile {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px dashed #b68cffaa;
+  border-radius: 9px;
+  background: rgba(8, 8, 32, 0.60);
+  color: #d9d3e9;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+#imageFile::file-selector-button {
+  margin-right: 12px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--purple);
+  border-radius: 8px;
+  background: rgba(22, 11, 43, 0.7);
+  color: #fff;
+  cursor: pointer;
+}
+
+.submit-btn, .logout-btn {
+  --btn-color: #b6ff5c;
+  display: block;
+  width: min(100%, 320px);
+  margin: 8px auto 0;
+  padding: 15px 18px;
+  border: 2px solid var(--btn-color);
+  border-radius: 12px;
+  background: rgba(8, 8, 32, 0.65);
+  color: #f8f3ff;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 8px var(--btn-color);
+  cursor: pointer;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--btn-color) 50%, transparent);
+}
+
+.submit-btn:hover:not(:disabled), .logout-btn:hover {
+  color: #070720;
+  background: var(--btn-color);
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 0 18px var(--btn-color);
+}
+
+.logout-btn {
+  --btn-color: #ff7ad9;
+  margin-top: 25px;
+  font-size: 0.85rem;
+  padding: 10px 14px;
+}
+
+.user-info {
+  margin-bottom: 20px;
+  padding: 10px;
+  border: 1px dashed var(--purple);
+  border-radius: 8px;
+  background: rgba(182, 140, 255, 0.1);
+  color: var(--cyan);
+  font-size: 0.85rem;
+}
+
+.hidden { display: none !important; }
+
+#status {
+  min-height: 1.8em;
+  margin: 22px 0 0;
+  color: #e7dcff;
+  font-weight: bold;
+}
+
+#status.is-success { color: var(--lime); text-shadow: 0 0 10px #b6ff5c88; }
+#status.is-error { color: #ff7a7a; text-shadow: 0 0 10px #ff7a7a88; }
+
+.draft-section {
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 1px dashed #b68cffaa;
+  text-align: left;
+}
+
+.draft-section h2 {
+  color: var(--yellow);
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+  text-shadow: 0 0 10px rgba(255, 232, 74, 0.5);
+}
+
+.draft-list {
+  display: grid;
+  gap: 12px;
+}
+
+.draft-item {
+  padding: 14px;
+  border: 1px solid var(--purple);
+  border-radius: 10px;
+  background: rgba(8, 8, 32, 0.5);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.draft-title {
+  color: #fff;
+  font-weight: bold;
+}
+
+.draft-date {
+  color: #a6a0bc;
+  font-size: 0.75rem;
+}
+</style>
+</head>
+
+<body>
+<div id="mycelium" aria-hidden="true"></div>
+<div id="stars" aria-hidden="true"></div>
+<canvas id="spore-canvas" aria-hidden="true"></canvas>
+
+<main>
+  <section class="big-frame">
+    <h1>🍄 BLOG 管理エリア</h1>
+
+    <div id="login-section">
+      <form id="login-form">
+        <div class="field">
+          <label for="email">メールアドレス📧</label>
+          <input type="email" id="email" required autocomplete="username">
+        </div>
+        <div class="field">
+          <label for="password">パスワード🔑</label>
+          <input type="password" id="password" required autocomplete="current-password">
+        </div>
+        <button type="submit" id="login-btn" class="submit-btn">🔐 ログインする</button>
+      </form>
+    </div>
+
+    <div id="post-section" class="hidden">
+      <div class="user-info">
+        ログイン中: <span id="user-email"></span>
+      </div>
+
+      <form id="post-form">
+        <div class="field">
+          <label for="title">タイトル📖</label>
+          <input type="text" id="title" required>
+        </div>
+
+        <div class="field">
+          <label for="content">本文✏️</label>
+          <textarea id="content" rows="6" required></textarea>
+        </div>
+
+        <div class="field">
+          <label for="imageFile">画像🎨</label>
+          <input type="file" id="imageFile" accept="image/*">
+        </div>
+
+        <div class="field">
+          <label class="checkbox-field">
+            <input type="checkbox" id="isDraft">
+            📝 4tagakiとして保存する
+          </label>
+        </div>
+
+        <button type="submit" id="submit-btn" class="submit-btn">🍄 保存する</button>
+      </form>
+
+      <div class="draft-section">
+        <h2>📝 4tagaki 一覧</h2>
+        <div id="draft-list" class="draft-list">
+          <p style="color: #bdb5d8; font-size: 0.85rem;">読み込み中... ⏳</p>
+        </div>
+      </div>
+
+      <button type="button" id="logout-btn" class="logout-btn">🚪 ログアウト</button>
+    </div>
+
+    <p id="status" role="status" aria-live="polite"></p>
+  </section>
+</main>
+
+<script>
+"use strict";
+
+const SUPABASE_URL = 'https://oqfqpzslduwynckdpqqx.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_1O773HFiGqD8A3FOKj5dSA_K2hVYUMh';
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const loginSection = document.getElementById('login-section');
+const postSection = document.getElementById('post-section');
+const loginForm = document.getElementById('login-form');
+const postForm = document.getElementById('post-form');
+const status = document.getElementById('status');
+const loginBtn = document.getElementById('login-btn');
+const submitBtn = document.getElementById('submit-btn');
+const logoutBtn = document.getElementById('logout-btn');
+const userEmailSpan = document.getElementById('user-email');
+const draftListContainer = document.getElementById('draft-list');
+
+function setStatus(message, type) {
+  status.textContent = message;
+  status.className = type ? 'is-' + type : '';
+}
+
+async function checkAuth() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  updateUI(session);
+
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    updateUI(session);
+  });
+}
+
+function updateUI(session) {
+  if (session) {
+    loginSection.classList.add('hidden');
+    postSection.classList.remove('hidden');
+    userEmailSpan.textContent = session.user.email;
+    setStatus('ログイン完了！ 🍄', 'success');
+    fetchDrafts(); // ログインしたら 4tagaki を取得！
+  } else {
+    loginSection.classList.remove('hidden');
+    postSection.classList.add('hidden');
+    setStatus('ログインしてください 🔑', '');
+  }
+}
+
+async function fetchDrafts() {
+  draftListContainer.innerHTML = '<p style="color:#bdb5d8; font-size:0.85rem;">読み込み中... ⏳</p>';
+
+  const { data: drafts, error } = await supabaseClient
+    .from('posts')
+    .select('*')
+    .eq('is_published', false)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    draftListContainer.innerHTML = '<p style="color:#ff7a7a;">取得失敗だじょ…</p>';
+    return;
+  }
+
+  if (!drafts || drafts.length === 0) {
+    draftListContainer.innerHTML = '<p style="color:#bdb5d8; font-size:0.85rem;">4tagaki（下書き）はありません 🍄</p>';
+    return;
+  }
+
+  draftListContainer.innerHTML = '';
+  drafts.forEach(draft => {
+    const div = document.createElement('div');
+    div.className = 'draft-item';
+    
+    const date = new Date(draft.created_at).toLocaleDateString('ja-JP');
+
+    div.innerHTML = `
+      <div>
+        <div class="draft-title">${draft.title || '無題'}</div>
+        <div class="draft-date">${date} 保存</div>
+      </div>
+    `;
+    draftListContainer.appendChild(div);
+  });
+}
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  loginBtn.disabled = true;
+  setStatus('ログイン中... ⏳');
+
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+  } catch (error) {
+    setStatus('❌ ログイン失敗: ' + error.message, 'error');
+  } finally {
+    loginBtn.disabled = false;
+  }
+});
+
+logoutBtn.addEventListener('click', async () => {
+  await supabaseClient.auth.signOut();
+});
+
+postForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  submitBtn.disabled = true;
+  setStatus('保存中... ⏳');
+
+  const title = document.getElementById('title').value;
+  const content = document.getElementById('content').value;
+  const fileInput = document.getElementById('imageFile');
+  const imageFile = fileInput.files[0];
+  const isDraftChecked = document.getElementById('isDraft').checked;
+  const isPublished = !isDraftChecked;
+
+  let imageUrl = '';
+
+  try {
+    if (imageFile) {
+      const fileExt = imageFile.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabaseClient.storage.from('blog-images').upload(fileName, imageFile);
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabaseClient.storage.from('blog-images').getPublicUrl(fileName);
+      imageUrl = publicUrlData.publicUrl;
+    }
+
+    const { error: insertError } = await supabaseClient.from('posts').insert([{
+      title,
+      content,
+      image_url: imageUrl,
+      is_published: isPublished
+    }]);
+
+    if (insertError) throw insertError;
+
+    setStatus(isPublished ? '🎉 記事を公開したじょ！' : '📝 4tagakiに保存したじょ！', 'success');
+    postForm.reset();
+    fetchDrafts();
+
+  } catch (error) {
+    setStatus('❌ エラー: ' + error.message, 'error');
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+checkAuth();
+</script>
+</body>
+</html>
