@@ -4,8 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#070720">
-<title>BLOG 投稿</title>
+<title>BLOG 投稿・管理</title>
 
+<!-- Supabase JS ライブラリ -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -164,6 +165,7 @@ h1 {
   }
 }
 
+#login-form,
 #post-form {
   display: grid;
   gap: 20px;
@@ -183,6 +185,8 @@ h1 {
   text-shadow: 0 0 10px #4de1ff66;
 }
 
+#email,
+#password,
 #title,
 #content {
   width: 100%;
@@ -196,6 +200,8 @@ h1 {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+#email:focus,
+#password:focus,
 #title:focus,
 #content:focus {
   border-color: var(--cyan);
@@ -244,7 +250,8 @@ h1 {
   color: #070720;
 }
 
-.submit-btn {
+.submit-btn,
+.logout-btn {
   --btn-color: #b6ff5c;
   display: block;
   width: min(100%, 320px);
@@ -269,7 +276,9 @@ h1 {
 }
 
 .submit-btn:hover:not(:disabled),
-.submit-btn:focus-visible:not(:disabled) {
+.submit-btn:focus-visible:not(:disabled),
+.logout-btn:hover,
+.logout-btn:focus-visible {
   color: #070720;
   background: var(--btn-color);
   transform: translateY(-4px) scale(1.03);
@@ -283,6 +292,27 @@ h1 {
 .submit-btn:disabled {
   opacity: 0.55;
   cursor: wait;
+}
+
+.logout-btn {
+  --btn-color: #ff7ad9;
+  margin-top: 25px;
+  font-size: 0.85rem;
+  padding: 10px 14px;
+}
+
+.user-info {
+  margin-bottom: 20px;
+  padding: 10px;
+  border: 1px dashed var(--purple);
+  border-radius: 8px;
+  background: rgba(182, 140, 255, 0.1);
+  color: var(--cyan);
+  font-size: 0.85rem;
+}
+
+.hidden {
+  display: none !important;
 }
 
 #status {
@@ -323,26 +353,50 @@ h1 {
 
 <main>
   <section class="big-frame">
-    <h1>🍄 BLOG 送っちゃいなYO</h1>
+    <h1>🍄 BLOG 管理エリア</h1>
 
-    <form id="post-form">
-      <div class="field">
-        <label for="title">タイトル📖</label>
-        <input type="text" id="title" required>
+    <div id="login-section">
+      <form id="login-form">
+        <div class="field">
+          <label for="email">メールアドレス📧</label>
+          <input type="email" id="email" required autocomplete="username">
+        </div>
+
+        <div class="field">
+          <label for="password">パスワード🔑</label>
+          <input type="password" id="password" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" id="login-btn" class="submit-btn">🔐 ログインする</button>
+      </form>
+    </div>
+
+    <div id="post-section" class="hidden">
+      <div class="user-info">
+        ログイン中: <span id="user-email"></span>
       </div>
 
-      <div class="field">
-        <label for="content">本文✏️</label>
-        <textarea id="content" rows="6" required></textarea>
-      </div>
+      <form id="post-form">
+        <div class="field">
+          <label for="title">タイトル📖</label>
+          <input type="text" id="title" required>
+        </div>
 
-      <div class="field">
-        <label for="imageFile">画像🎨</label>
-        <input type="file" id="imageFile" accept="image/*">
-      </div>
+        <div class="field">
+          <label for="content">本文✏️</label>
+          <textarea id="content" rows="6" required></textarea>
+        </div>
 
-      <button type="submit" id="submit-btn" class="submit-btn">🍄 投稿する</button>
-    </form>
+        <div class="field">
+          <label for="imageFile">画像🎨</label>
+          <input type="file" id="imageFile" accept="image/*">
+        </div>
+
+        <button type="submit" id="submit-btn" class="submit-btn">🍄 投稿する</button>
+      </form>
+
+      <button type="button" id="logout-btn" class="logout-btn">🚪 ログアウト</button>
+    </div>
 
     <p id="status" role="status" aria-live="polite"></p>
   </section>
@@ -356,16 +410,74 @@ const SUPABASE_ANON_KEY = 'sb_publishable_1O773HFiGqD8A3FOKj5dSA_K2hVYUMh';
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const form = document.getElementById('post-form');
+const loginSection = document.getElementById('login-section');
+const postSection = document.getElementById('post-section');
+const loginForm = document.getElementById('login-form');
+const postForm = document.getElementById('post-form');
 const status = document.getElementById('status');
+const loginBtn = document.getElementById('login-btn');
 const submitBtn = document.getElementById('submit-btn');
+const logoutBtn = document.getElementById('logout-btn');
+const userEmailSpan = document.getElementById('user-email');
 
 function setStatus(message, type) {
   status.textContent = message;
   status.className = type ? 'is-' + type : '';
 }
 
-form.addEventListener('submit', async (e) => {
+async function checkAuth() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  updateUI(session);
+
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    updateUI(session);
+  });
+}
+
+function updateUI(session) {
+  if (session) {
+    loginSection.classList.add('hidden');
+    postSection.classList.remove('hidden');
+    userEmailSpan.textContent = session.user.email;
+    setStatus('ログイン完了！記事を書けるよ 🍄', 'success');
+  } else {
+    loginSection.classList.remove('hidden');
+    postSection.classList.add('hidden');
+    setStatus('ログインしてください 🔑', '');
+  }
+}
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  loginBtn.disabled = true;
+  setStatus('ログイン中... ⏳');
+
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
+
+    if (error) throw error;
+    setStatus('🎉 ログインに成功しました！', 'success');
+
+  } catch (error) {
+    console.error(error);
+    setStatus('❌ ログイン失敗: ' + error.message, 'error');
+  } finally {
+    loginBtn.disabled = false;
+  }
+});
+
+logoutBtn.addEventListener('click', async () => {
+  await supabaseClient.auth.signOut();
+  setStatus('ログアウトしました 🚪');
+});
+
+postForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
   submitBtn.disabled = true;
@@ -379,9 +491,9 @@ form.addEventListener('submit', async (e) => {
   let imageUrl = '';
 
   try {
+    // 1. 画像アップロード
     if (imageFile) {
       setStatus('画像をアップロード中... 📷');
-
       const fileExt = imageFile.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
 
@@ -400,6 +512,7 @@ form.addEventListener('submit', async (e) => {
       imageUrl = publicUrlData.publicUrl;
     }
 
+    // 2. DB保存
     setStatus('記事を保存中... 📝');
 
     const { error: insertError } = await supabaseClient
@@ -415,7 +528,7 @@ form.addEventListener('submit', async (e) => {
     }
 
     setStatus('🎉 投稿が完了しました！', 'success');
-    form.reset();
+    postForm.reset();
 
   } catch (error) {
     console.error(error);
@@ -424,6 +537,8 @@ form.addEventListener('submit', async (e) => {
     submitBtn.disabled = false;
   }
 });
+
+checkAuth();
 
 (() => {
   const canvas = document.getElementById("spore-canvas");

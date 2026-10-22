@@ -88,6 +88,7 @@ main {
   padding: 55px 0 65px;
 }
 
+/* 大枠（ピンク） */
 .big-frame {
   padding: 34px 26px 36px;
   border: 2px solid #ff7ad9;
@@ -112,6 +113,7 @@ main {
   }
 }
 
+/* 瞬くネオンサイン風のタイトル */
 h1 {
   margin: 0 0 28px;
   color: #ffe3f7;
@@ -158,6 +160,7 @@ h1 {
   }
 }
 
+/* 読み込み中・空・エラーのメッセージ */
 .message {
   margin: 10px 0;
   color: #e7dcff;
@@ -171,6 +174,7 @@ h1 {
   text-shadow: 0 0 10px #ff7a7a88;
 }
 
+/* 投稿カード：1枚ずつ枠の色が違う（外枠のピンクは使わない） */
 #posts-container {
   display: grid;
   gap: 22px;
@@ -274,6 +278,10 @@ h1 {
 <script>
 "use strict";
 
+/* ---------------------------------------------------------
+   記事の読み込みと表示
+--------------------------------------------------------- */
+
 const SUPABASE_URL = 'https://oqfqpzslduwynckdpqqx.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_1O773HFiGqD8A3FOKj5dSA_K2hVYUMh';
 
@@ -288,6 +296,7 @@ function showMessage(text, isError) {
   container.replaceChildren(p);
 }
 
+/* 新しい順に並べる（created_at があれば日付、なければ id の大きい順） */
 function sortNewestFirst(posts) {
   const list = [...posts];
 
@@ -313,6 +322,7 @@ function formatDate(value) {
   return `${y}.${m}.${d}`;
 }
 
+/* 画像のURLは http / https のものだけ使う */
 function safeImageUrl(url) {
   try {
     const parsed = new URL(url);
@@ -337,6 +347,7 @@ function buildPostCard(post) {
     card.appendChild(date);
   }
 
+  /* 文字は textContent で入れるので、HTMLとして実行されない */
   const title = document.createElement('h3');
   title.textContent = post.title || '';
   card.appendChild(title);
@@ -391,6 +402,11 @@ async function fetchPosts() {
 
 fetchPosts();
 
+/* ---------------------------------------------------------
+   見た目の演出（トップページと同じ）
+--------------------------------------------------------- */
+
+/* 🍄 胞子のアニメーション */
 (() => {
   const canvas = document.getElementById("spore-canvas");
   const ctx = canvas.getContext("2d");
@@ -496,6 +512,7 @@ fetchPosts();
   animate();
 })();
 
+/* ✦ きらきら星 */
 (() => {
   const starContainer = document.getElementById("stars");
   const fragment = document.createDocumentFragment();
@@ -533,6 +550,7 @@ fetchPosts();
   starContainer.appendChild(fragment);
 })();
 
+/* 🍄 クリックした場所に小さな光 */
 document.addEventListener("click", (event) => {
   const colors = ["#ff7ad9", "#4de1ff", "#ffe84a", "#b68cff"];
 
@@ -567,6 +585,7 @@ document.addEventListener("click", (event) => {
   }
 });
 
+/* ✦ マウスを乗せるとキラキラ（タイトル） */
 (() => {
   const title = document.querySelector("h1");
   const colors = ["#ff65c3", "#b6ff5c", "#62f7ff", "#b68cff", "#ffb85c", "#ffe84a"];

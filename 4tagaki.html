@@ -201,6 +201,14 @@ h1 {
   color: #d9d3e9;
   font-size: 0.9rem;
   cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#imageFile:hover,
+#imageFile:focus-visible {
+  border-color: var(--cyan);
+  box-shadow: 0 0 12px #4de1ff44;
+  outline: none;
 }
 
 #imageFile::file-selector-button {
@@ -210,7 +218,15 @@ h1 {
   border-radius: 8px;
   background: rgba(22, 11, 43, 0.7);
   color: #fff;
+  font: inherit;
+  font-size: 0.9rem;
   cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+#imageFile::file-selector-button:hover {
+  background: var(--purple);
+  color: #070720;
 }
 
 .submit-btn, .logout-btn {
@@ -227,14 +243,33 @@ h1 {
   letter-spacing: 0.06em;
   text-shadow: 0 0 8px var(--btn-color);
   cursor: pointer;
-  box-shadow: 0 0 10px color-mix(in srgb, var(--btn-color) 50%, transparent);
+  box-shadow:
+    0 0 10px color-mix(in srgb, var(--btn-color) 50%, transparent),
+    inset 0 0 8px color-mix(in srgb, var(--btn-color) 25%, transparent);
+  transition:
+    transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
-.submit-btn:hover:not(:disabled), .logout-btn:hover {
+.submit-btn:hover:not(:disabled),
+.submit-btn:focus-visible:not(:disabled),
+.logout-btn:hover,
+.logout-btn:focus-visible {
   color: #070720;
   background: var(--btn-color);
   transform: translateY(-4px) scale(1.03);
-  box-shadow: 0 0 18px var(--btn-color);
+  box-shadow:
+    0 0 18px var(--btn-color),
+    0 0 32px var(--btn-color);
+  outline: none;
+  text-shadow: none;
+}
+
+.submit-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
 }
 
 .logout-btn {
@@ -252,6 +287,7 @@ h1 {
   background: rgba(182, 140, 255, 0.1);
   color: var(--cyan);
   font-size: 0.85rem;
+  overflow-wrap: anywhere;
 }
 
 .hidden { display: none !important; }
@@ -261,6 +297,7 @@ h1 {
   margin: 22px 0 0;
   color: #e7dcff;
   font-weight: bold;
+  overflow-wrap: anywhere;
 }
 
 #status.is-success { color: var(--lime); text-shadow: 0 0 10px #b6ff5c88; }
@@ -285,6 +322,18 @@ h1 {
   gap: 12px;
 }
 
+.draft-message {
+  margin: 0;
+  color: #bdb5d8;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.draft-message.is-error {
+  color: #ff7a7a;
+}
+
 .draft-item {
   padding: 14px;
   border: 1px solid var(--purple);
@@ -298,11 +347,22 @@ h1 {
 .draft-title {
   color: #fff;
   font-weight: bold;
+  overflow-wrap: anywhere;
 }
 
 .draft-date {
   color: #a6a0bc;
   font-size: 0.75rem;
+}
+
+@media (max-width: 600px) {
+  main {
+    padding-top: 25px;
+  }
+
+  .big-frame {
+    padding: 24px 16px 28px;
+  }
 }
 </style>
 </head>
@@ -364,7 +424,7 @@ h1 {
       <div class="draft-section">
         <h2>📝 4tagaki 一覧</h2>
         <div id="draft-list" class="draft-list">
-          <p style="color: #bdb5d8; font-size: 0.85rem;">読み込み中... ⏳</p>
+          <p class="draft-message">読み込み中... ⏳</p>
         </div>
       </div>
 
@@ -408,13 +468,21 @@ async function checkAuth() {
   });
 }
 
+let currentUserId;
+
 function updateUI(session) {
+  const userId = session ? session.user.id : null;
+
+  if (userId === currentUserId) return;
+  currentUserId = userId;
+
   if (session) {
     loginSection.classList.add('hidden');
     postSection.classList.remove('hidden');
     userEmailSpan.textContent = session.user.email;
     setStatus('ログイン完了！ 🍄', 'success');
-    fetchDrafts(); // ログインしたら 4tagaki を取得！
+
+    setTimeout(fetchDrafts, 0);
   } else {
     loginSection.classList.remove('hidden');
     postSection.classList.add('hidden');
@@ -422,40 +490,67 @@ function updateUI(session) {
   }
 }
 
+function showDraftMessage(text, isError) {
+  const p = document.createElement('p');
+  p.className = 'draft-message' + (isError ? ' is-error' : '');
+  p.textContent = text;
+  draftListContainer.replaceChildren(p);
+}
+
 async function fetchDrafts() {
-  draftListContainer.innerHTML = '<p style="color:#bdb5d8; font-size:0.85rem;">読み込み中... ⏳</p>';
+  showDraftMessage('読み込み中... ⏳', false);
 
   const { data: drafts, error } = await supabaseClient
     .from('posts')
     .select('*')
-    .eq('is_published', false)
-    .order('title', { ascending: true });
+    .eq('is_published', false);
 
   if (error) {
-    draftListContainer.innerHTML = '<p style="color:#ff7a7a;">取得失敗だじょ… ' + error.message + '</p>';
+    console.error(error);
+    showDraftMessage('取得失敗だじょ… ' + error.message, true);
     return;
   }
 
   if (!drafts || drafts.length === 0) {
-    draftListContainer.innerHTML = '<p style="color:#bdb5d8; font-size:0.85rem;">4tagaki（下書き）はありません 🍄</p>';
+    showDraftMessage('4tagaki（下書き）はありません 🍄', false);
     return;
   }
 
-  draftListContainer.innerHTML = '';
-  drafts.forEach(draft => {
-    const div = document.createElement('div');
-    div.className = 'draft-item';
-    
-    const date = new Date(draft.created_at).toLocaleDateString('ja-JP');
-
-    div.innerHTML = `
-      <div>
-        <div class="draft-title">${draft.title || '無題'}</div>
-        <div class="draft-date">${date} 保存</div>
-      </div>
-    `;
-    draftListContainer.appendChild(div);
+  const sorted = [...drafts].sort((a, b) => {
+    if (a.created_at || b.created_at) {
+      return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    }
+    if (a.id < b.id) return 1;
+    if (a.id > b.id) return -1;
+    return 0;
   });
+
+  const fragment = document.createDocumentFragment();
+
+  sorted.forEach((draft) => {
+    const item = document.createElement('div');
+    item.className = 'draft-item';
+
+    const box = document.createElement('div');
+
+    const title = document.createElement('div');
+    title.className = 'draft-title';
+    title.textContent = draft.title || '無題';
+    box.appendChild(title);
+
+    if (draft.created_at) {
+      const date = document.createElement('div');
+      date.className = 'draft-date';
+      date.textContent =
+        new Date(draft.created_at).toLocaleDateString('ja-JP') + ' 保存';
+      box.appendChild(date);
+    }
+
+    item.appendChild(box);
+    fragment.appendChild(item);
+  });
+
+  draftListContainer.replaceChildren(fragment);
 }
 
 loginForm.addEventListener('submit', async (e) => {
@@ -467,7 +562,7 @@ loginForm.addEventListener('submit', async (e) => {
   const password = document.getElementById('password').value;
 
   try {
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) throw error;
   } catch (error) {
     setStatus('❌ ログイン失敗: ' + error.message, 'error');
@@ -519,6 +614,7 @@ postForm.addEventListener('submit', async (e) => {
     fetchDrafts();
 
   } catch (error) {
+    console.error(error);
     setStatus('❌ エラー: ' + error.message, 'error');
   } finally {
     submitBtn.disabled = false;
@@ -526,6 +622,236 @@ postForm.addEventListener('submit', async (e) => {
 });
 
 checkAuth();
+
+(() => {
+  const canvas = document.getElementById("spore-canvas");
+  const ctx = canvas.getContext("2d");
+
+  if (!ctx) return;
+
+  let width = 0;
+  let height = 0;
+  let spores = [];
+  let mouseX = 0;
+  let mouseY = 0;
+
+  const colors = [
+    "#ff7ad9",
+    "#4de1ff",
+    "#ffe84a",
+    "#b68cff",
+    "#b6ff5c"
+  ];
+
+  function resize() {
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+
+    width = window.innerWidth;
+    height = window.innerHeight;
+
+    canvas.width = Math.round(width * ratio);
+    canvas.height = Math.round(height * ratio);
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+    const count = Math.min(
+      180,
+      Math.max(60, Math.floor((width * height) / 8500))
+    );
+
+    spores = Array.from({ length: count }, () => createSpore(true));
+  }
+
+  function createSpore(randomY = false) {
+    return {
+      x: Math.random() * width,
+      y: randomY ? Math.random() * height : height + 10,
+      size: Math.random() * 2.1 + 0.5,
+      speed: Math.random() * 0.55 + 0.12,
+      drift: (Math.random() - 0.5) * 0.45,
+      alpha: Math.random() * 0.65 + 0.2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      phase: Math.random() * Math.PI * 2
+    };
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, width, height);
+
+    for (const spore of spores) {
+      spore.phase += 0.015;
+      spore.x += spore.drift + Math.sin(spore.phase) * 0.12;
+      spore.y -= spore.speed;
+
+      if (spore.y < -10) {
+        Object.assign(spore, createSpore(false));
+      }
+
+      if (spore.x < -10) spore.x = width + 10;
+      if (spore.x > width + 10) spore.x = -10;
+
+      const parallaxX = mouseX * 0.012;
+      const parallaxY = mouseY * 0.012;
+
+      ctx.globalAlpha = spore.alpha;
+      ctx.fillStyle = spore.color;
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = spore.color;
+
+      ctx.beginPath();
+      ctx.arc(
+        spore.x + parallaxX,
+        spore.y + parallaxY,
+        spore.size,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+
+    requestAnimationFrame(animate);
+  }
+
+  window.addEventListener("resize", resize, { passive: true });
+
+  window.addEventListener("mousemove", (event) => {
+    mouseX = event.clientX - width / 2;
+    mouseY = event.clientY - height / 2;
+  }, { passive: true });
+
+  resize();
+  animate();
+})();
+
+(() => {
+  const container = document.getElementById("stars");
+  const fragment = document.createDocumentFragment();
+
+  for (let i = 0; i < 50; i++) {
+    const star = document.createElement("span");
+
+    star.textContent = "✦";
+    star.setAttribute("aria-hidden", "true");
+
+    Object.assign(star.style, {
+      position: "absolute",
+      left: Math.random() * 100 + "%",
+      top: Math.random() * 100 + "%",
+      color: i % 2 ? "#4de1ff" : "#ff7ad9",
+      fontSize: Math.random() * 9 + 5 + "px",
+      opacity: String(Math.random() * 0.55 + 0.12),
+      textShadow: "0 0 8px currentColor",
+      animation: `starBlink ${Math.random() * 3 + 2}s ease-in-out infinite alternate`,
+      animationDelay: Math.random() * -5 + "s"
+    });
+
+    fragment.appendChild(star);
+  }
+
+  const style = document.createElement("style");
+  style.textContent = `
+    @keyframes starBlink {
+      from { opacity: 0.12; }
+      to { opacity: 0.85; }
+    }
+  `;
+
+  document.head.appendChild(style);
+  container.appendChild(fragment);
+})();
+
+document.addEventListener("click", (event) => {
+  const colors = ["#ff7ad9", "#4de1ff", "#ffe84a", "#b68cff"];
+
+  for (let i = 0; i < 6; i++) {
+    const spark = document.createElement("span");
+    const angle = Math.PI * 2 * i / 6;
+    const distance = 18 + Math.random() * 24;
+
+    spark.textContent = "✦";
+
+    Object.assign(spark.style, {
+      position: "fixed",
+      left: event.clientX + "px",
+      top: event.clientY + "px",
+      zIndex: "99",
+      pointerEvents: "none",
+      color: colors[i % colors.length],
+      fontSize: "13px",
+      textShadow: "0 0 8px currentColor",
+      transition: "transform 550ms ease-out, opacity 550ms ease-out"
+    });
+
+    document.body.appendChild(spark);
+
+    requestAnimationFrame(() => {
+      spark.style.transform =
+        `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
+      spark.style.opacity = "0";
+    });
+
+    window.setTimeout(() => spark.remove(), 650);
+  }
+});
+
+(() => {
+  const colors = ["#ff65c3", "#b6ff5c", "#62f7ff", "#b68cff", "#ffb85c", "#ffe84a"];
+  const marks = ["✦", "✧", "✨"];
+
+  function sparkle(element) {
+    const rect = element.getBoundingClientRect();
+    const spark = document.createElement("span");
+
+    spark.textContent = marks[Math.floor(Math.random() * marks.length)];
+
+    Object.assign(spark.style, {
+      position: "fixed",
+      left: rect.left + Math.random() * rect.width + "px",
+      top: rect.top + Math.random() * rect.height + "px",
+      zIndex: "99",
+      pointerEvents: "none",
+      color: colors[Math.floor(Math.random() * colors.length)],
+      fontSize: 9 + Math.random() * 10 + "px",
+      textShadow: "0 0 8px currentColor",
+      opacity: "1",
+      transition: "transform 750ms ease-out, opacity 750ms ease-out"
+    });
+
+    document.body.appendChild(spark);
+
+    requestAnimationFrame(() => {
+      const dx = (Math.random() - 0.5) * 44;
+      const dy = -(18 + Math.random() * 32);
+      const rot = (Math.random() - 0.5) * 180;
+      spark.style.transform =
+        `translate(${dx}px, ${dy}px) rotate(${rot}deg) scale(0.4)`;
+      spark.style.opacity = "0";
+    });
+
+    window.setTimeout(() => spark.remove(), 800);
+  }
+
+  function setupSparkle(element) {
+    let timer = null;
+    element.addEventListener("mouseenter", () => {
+      if (timer) return;
+      sparkle(element);
+      timer = window.setInterval(() => sparkle(element), 90);
+    });
+
+    element.addEventListener("mouseleave", () => {
+      window.clearInterval(timer);
+      timer = null;
+    });
+  }
+
+  document.querySelectorAll("h1, .submit-btn, .logout-btn").forEach(setupSparkle);
+})();
 </script>
 </body>
 </html>
