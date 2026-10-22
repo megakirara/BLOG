@@ -119,6 +119,16 @@ h1 {
   align-items: center;
 }
 
+.title-link {
+  display: inline-block;
+  text-decoration: none;
+  transition: transform 0.2s ease;
+}
+
+.title-link:hover {
+  transform: scale(1.03);
+}
+
 .neon-nikki-title {
   max-width: 100%;
   height: auto;
@@ -308,7 +318,9 @@ h1 {
 <main>
   <section class="big-frame">
     <h1>
-      <img src="files/nikki.png" alt="KINOKO-BLOG 日記" class="neon-nikki-title">
+      <a href="https://megakirara.github.io/-KINOKO/" class="title-link">
+        <img src="files/nikki.png" alt="KINOKO-BLOG 日記" class="neon-nikki-title">
+      </a>
     </h1>
 
     <div id="posts-container" aria-live="polite">
