@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#070720">
+<title>BLOG 投稿・4tagaki管理</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root {
+  --bg: #070720;
+  --pink: #ff7ad9;
+  --cyan: #4de1ff;
+  --yellow: #ffe84a;
+  --purple: #b68cff;
+  --lime: #b6ff5c;
+  --coral: #ff7a7a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: #f8edff;
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(7, 7, 32, 0.40), rgba(7, 7, 32, 0.55)),
+    url("files/neon_back.jpg");
+  background-repeat: no-repeat, repeat;
+  background-attachment: fixed, fixed;
+  background-position: center, center;
+  background-size: auto, 1111px auto;
+  font-family:
+    "Hiragino Kaku Gothic ProN",
+    "Yu Gothic",
+    Meiryo,
+    sans-serif;
+  text-align: center;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+#mycelium,
+#spore-canvas,
+#stars {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+#mycelium {
+  z-index: 0;
+  opacity: 0.3;
+  background:
+    radial-gradient(ellipse at 15% 25%, #642cff33, transparent 45%),
+    radial-gradient(ellipse at 85% 65%, #ff36bd22, transparent 45%),
+    radial-gradient(ellipse at 50% 90%, #00eaff1a, transparent 40%);
+  animation: myceliumGlow 9s ease-in-out infinite alternate;
+}
+
+#spore-canvas, #stars {
+  z-index: 1;
+}
+
+@keyframes myceliumGlow {
+  from { opacity: 0.18; }
+  to { opacity: 0.48; }
+}
+
+main {
+  position: relative;
+  z-index: 2;
+  width: min(720px, 92%);
+  margin: 0 auto;
+  padding: 55px 0 65px;
+}
+
+.big-frame {
+  padding: 34px 26px 36px;
+  border: 2px solid #ff7ad9;
+  border-radius: 24px;
+  background: rgba(8, 6, 32, 0.25);
+  box-shadow:
+    0 0 15px #ff7ad988,
+    0 0 35px #ff3dc844,
+    inset 0 0 25px #b68cff33;
+  backdrop-filter: blur(3px);
+  animation: fadeIn 1.6s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+h1 {
+  margin: 0 0 26px;
+  color: #ffe3f7;
+  font-size: clamp(1.5rem, 5.5vw, 2.3rem);
+  line-height: 1.4;
+  text-shadow:
+    0 0 4px #fff,
+    0 0 10px #ff7ad9,
+    0 0 22px #ff3dc8,
+    0 0 44px #ff3dc8,
+    0 0 80px #ff3dc888,
+    0 0 6px #4de1ff66;
+  animation: neonFlicker 4.5s linear infinite;
+}
+
+@keyframes neonFlicker {
+  0%, 17%, 21%, 24%, 52%, 56%, 80%, 83%, 100% {
+    opacity: 1; color: #ffe3f7;
+    text-shadow: 0 0 4px #fff, 0 0 10px #ff7ad9, 0 0 22px #ff3dc8, 0 0 44px #ff3dc8;
+  }
+  18%, 22%, 54%, 81% {
+    opacity: 0.55; color: #c98ab5; text-shadow: 0 0 2px #ff7ad966;
+  }
+}
+
+#login-form, #post-form {
+  display: grid;
+  gap: 20px;
+  text-align: left;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field label {
+  color: var(--cyan);
+  font-size: 0.95rem;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 10px #4de1ff66;
+}
+
+.field-note {
+  margin: 0;
+  color: #a6a0bc;
+  font-size: 0.75rem;
+  line-height: 1.7;
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--yellow);
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-shadow: 0 0 8px rgba(255, 232, 74, 0.4);
+}
+
+.checkbox-field input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--pink);
+  cursor: pointer;
+}
+
+#email, #password, #title, #content, #postDate {
+  width: 100%;
+  padding: 12px 13px;
+  border: 1.5px solid #b68cffaa;
+  border-radius: 9px;
+  background: rgba(8, 8, 32, 0.60);
+  color: #fff;
+  line-height: 1.7;
+  outline: none;
+  color-scheme: dark;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#email:focus, #password:focus, #title:focus, #content:focus, #postDate:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 12px #4de1ff66;
+}
+
+#content {
+  min-height: 150px;
+  resize: vertical;
+}
+
+#postDate {
+  max-width: 220px;
+}
+
+#imageFile {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px dashed #b68cffaa;
+  border-radius: 9px;
+  background: rgba(8, 8, 32, 0.60);
+  color: #d9d3e9;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#imageFile:hover,
+#imageFile:focus-visible {
+  border-color: var(--cyan);
+  box-shadow: 0 0 12px #4de1ff44;
+  outline: none;
+}
+
+#imageFile::file-selector-button {
+  margin-right: 12px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--purple);
+  border-radius: 8px;
+  background: rgba(22, 11, 43, 0.7);
+  color: #fff;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+#imageFile::file-selector-button:hover {
+  background: var(--purple);
+  color: #070720;
+}
+
+.current-image {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px dashed var(--purple);
+  border-radius: 10px;
+  background: rgba(182, 140, 255, 0.08);
+}
+
+.current-image img {
+  display: block;
+  max-width: 100%;
+  max-height: 180px;
+  margin: 0 auto;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.edit-banner {
+  padding: 12px 14px;
+  border: 1.5px solid var(--yellow);
+  border-radius: 10px;
+  background: rgba(255, 232, 74, 0.08);
+  color: var(--yellow);
+  font-size: 0.9rem;
+  font-weight: bold;
+  line-height: 1.7;
+  text-shadow: 0 0 8px rgba(255, 232, 74, 0.4);
+  overflow-wrap: anywhere;
+}
+
+.submit-btn, .logout-btn, .cancel-btn {
+  --btn-color: #b6ff5c;
+  display: block;
+  width: min(100%, 320px);
+  margin: 8px auto 0;
+  padding: 15px 18px;
+  border: 2px solid var(--btn-color);
+  border-radius: 12px;
+  background: rgba(8, 8, 32, 0.65);
+  color: #f8f3ff;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 8px var(--btn-color);
+  cursor: pointer;
+  box-shadow:
+    0 0 10px color-mix(in srgb, var(--btn-color) 50%, transparent),
+    inset 0 0 8px color-mix(in srgb, var(--btn-color) 25%, transparent);
+  transition:
+    transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.submit-btn:hover:not(:disabled),
+.submit-btn:focus-visible:not(:disabled),
+.logout-btn:hover,
+.logout-btn:focus-visible,
+.cancel-btn:hover,
+.cancel-btn:focus-visible {
+  color: #070720;
+  background: var(--btn-color);
+  transform: translateY(-4px) scale(1.03);
+  box-shadow:
+    0 0 18px var(--btn-color),
+    0 0 32px var(--btn-color);
+  outline: none;
+  text-shadow: none;
+}
+
+.submit-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.logout-btn {
+  --btn-color: #ff7ad9;
+  margin-top: 25px;
+  font-size: 0.85rem;
+  padding: 10px 14px;
+}
+
+.cancel-btn {
+  --btn-color: #b68cff;
+  font-size: 0.9rem;
+  padding: 11px 14px;
+}
+
+.user-info {
+  margin-bottom: 20px;
+  padding: 10px;
+  border: 1px dashed var(--purple);
+  border-radius: 8px;
+  background: rgba(182, 140, 255, 0.1);
+  color: var(--cyan);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.hidden { display: none !important; }
+
+#status {
+  min-height: 1.8em;
+  margin: 22px 0 0;
+  color: #e7dcff;
+  font-weight: bold;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+#status.is-success { color: var(--lime); text-shadow: 0 0 10px #b6ff5c88; }
+#status.is-error { color: #ff7a7a; text-shadow: 0 0 10px #ff7a7a88; }
+
+.list-section {
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 1px dashed #b68cffaa;
+  text-align: left;
+}
+
+.list-section + .list-section {
+  margin-top: 30px;
+}
+
+.list-section h2 {
+  margin: 0 0 15px;
+  font-size: 1.2rem;
+}
+
+#draft-section h2 {
+  color: var(--yellow);
+  text-shadow: 0 0 10px rgba(255, 232, 74, 0.5);
+}
+
+#published-section h2 {
+  color: var(--cyan);
+  text-shadow: 0 0 10px rgba(77, 225, 255, 0.5);
+}
+
+.post-list {
+  display: grid;
+  gap: 12px;
+}
+
+.list-message {
+  margin: 0;
+  color: #bdb5d8;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.list-message.is-error {
+  color: #ff7a7a;
+}
+
+.list-item {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--purple);
+  border-radius: 10px;
+  background: rgba(8, 8, 32, 0.5);
+}
+
+#published-list .list-item {
+  border-color: #62f7ff88;
+}
+
+.list-item.is-editing {
+  border-color: var(--yellow);
+  box-shadow: 0 0 12px rgba(255, 232, 74, 0.35);
+}
+
+.list-title {
+  color: #fff;
+  font-weight: bold;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.list-date {
+  margin-top: 4px;
+  color: #a6a0bc;
+  font-size: 0.75rem;
+  font-family: monospace;
+  letter-spacing: 0.06em;
+}
+
+.item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.mini-btn {
+  --btn-color: #62f7ff;
+  padding: 8px 16px;
+  border: 1.5px solid var(--btn-color);
+  border-radius: 9px;
+  background: rgba(8, 8, 32, 0.65);
+  color: #f8f3ff;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--btn-color) 40%, transparent);
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.mini-btn.delete {
+  --btn-color: #ff7a7a;
+}
+
+.mini-btn:hover:not(:disabled),
+.mini-btn:focus-visible:not(:disabled) {
+  color: #070720;
+  background: var(--btn-color);
+  transform: translateY(-2px);
+  box-shadow: 0 0 14px var(--btn-color);
+  outline: none;
+}
+
+.mini-btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+@media (max-width: 600px) {
+  main {
+    padding-top: 25px;
+  }
+
+  .big-frame {
+    padding: 24px 16px 28px;
+  }
+}
+</style>
+</head>
+
+<body>
+<div id="mycelium" aria-hidden="true"></div>
+<div id="stars" aria-hidden="true"></div>
+<canvas id="spore-canvas" aria-hidden="true"></canvas>
+
+<main>
+  <section class="big-frame">
+    <h1>🍄 BLOG 管理エリア</h1>
+
+    <div id="login-section">
+      <form id="login-form">
+        <div class="field">
+          <label for="email">メールアドレス📧</label>
+          <input type="email" id="email" required autocomplete="username">
+        </div>
+        <div class="field">
+          <label for="password">パスワード🔑</label>
+          <input type="password" id="password" required autocomplete="current-password">
+        </div>
+        <button type="submit" id="login-btn" class="submit-btn">🔐 ログインする</button>
+      </form>
+    </div>
+
+    <div id="post-section" class="hidden">
+      <div class="user-info">
+        ログイン中: <span id="user-email"></span>
+      </div>
+
+      <form id="post-form">
+        <div id="edit-banner" class="edit-banner hidden"></div>
+
+        <div class="field">
+          <label for="title">タイトル📖</label>
+          <input type="text" id="title" required>
+        </div>
+
+        <div class="field">
+          <label for="content">本文✏️</label>
+          <textarea id="content" rows="6" required></textarea>
+        </div>
+
+        <div class="field">
+          <label for="postDate">日付📅</label>
+          <input type="date" id="postDate">
+          <p class="field-note">
+            空のままなら、保存した日になるよ。昔の日記の日付を直したいときは、ここで選んでね。
+          </p>
+        </div>
+
+        <div class="field">
+          <label for="imageFile">画像🎨</label>
+
+          <div id="current-image" class="current-image hidden">
+            <img id="current-image-preview" alt="いま付いている画像">
+            <label class="checkbox-field">
+              <input type="checkbox" id="removeImage">
+              🗑️ この画像を外す
+            </label>
+          </div>
+
+          <input type="file" id="imageFile" accept="image/*">
+          <p class="field-note" id="image-note"></p>
+        </div>
+
+        <div class="field">
+          <label class="checkbox-field">
+            <input type="checkbox" id="isDraft">
+            📝 4tagakiとして保存する
+          </label>
+        </div>
+
+        <button type="submit" id="submit-btn" class="submit-btn">🍄 保存する</button>
+        <button type="button" id="cancel-btn" class="cancel-btn hidden">↩️ 編集をやめる</button>
+      </form>
+
+      <div id="draft-section" class="list-section">
+        <h2>📝 4tagaki 一覧</h2>
+        <div id="draft-list" class="post-list">
+          <p class="list-message">読み込み中... ⏳</p>
+        </div>
+      </div>
+
+      <div id="published-section" class="list-section">
+        <h2>📖 公開中の記事</h2>
+        <div id="published-list" class="post-list">
+          <p class="list-message">読み込み中... ⏳</p>
+        </div>
+      </div>
+
+      <button type="button" id="logout-btn" class="logout-btn">🚪 ログアウト</button>
+    </div>
+
+    <p id="status" role="status" aria-live="polite"></p>
+  </section>
+</main>
+
+<script>
+"use strict";
+
+const SUPABASE_URL = 'https://oqfqpzslduwynckdpqqx.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_1O773HFiGqD8A3FOKj5dSA_K2hVYUMh';
+const BUCKET = 'blog-images';
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const loginSection = document.getElementById('login-section');
+const postSection = document.getElementById('post-section');
+const loginForm = document.getElementById('login-form');
+const postForm = document.getElementById('post-form');
+const status = document.getElementById('status');
+const loginBtn = document.getElementById('login-btn');
+const submitBtn = document.getElementById('submit-btn');
+const cancelBtn = document.getElementById('cancel-btn');
+const logoutBtn = document.getElementById('logout-btn');
+const userEmailSpan = document.getElementById('user-email');
+const draftListContainer = document.getElementById('draft-list');
+const publishedListContainer = document.getElementById('published-list');
+
+const titleInput = document.getElementById('title');
+const contentInput = document.getElementById('content');
+const dateInput = document.getElementById('postDate');
+const fileInput = document.getElementById('imageFile');
+const draftCheckbox = document.getElementById('isDraft');
+const removeImageCheckbox = document.getElementById('removeImage');
+const currentImageBox = document.getElementById('current-image');
+const currentImagePreview = document.getElementById('current-image-preview');
+const imageNote = document.getElementById('image-note');
+const editBanner = document.getElementById('edit-banner');
+
+function setStatus(message, type) {
+  status.textContent = message;
+  status.className = type ? 'is-' + type : '';
+}
+
+async function checkAuth() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  updateUI(session);
+
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    updateUI(session);
+  });
+}
+
+let currentUserId;
+
+function updateUI(session) {
+  const userId = session ? session.user.id : null;
+
+  if (userId === currentUserId) return;
+  currentUserId = userId;
+
+  if (session) {
+    loginSection.classList.add('hidden');
+    postSection.classList.remove('hidden');
+    userEmailSpan.textContent = session.user.email;
+    setStatus('ログイン完了！ 🍄', 'success');
+
+    setTimeout(fetchPosts, 0);
+  } else {
+    cancelEdit();
+    loginSection.classList.remove('hidden');
+    postSection.classList.add('hidden');
+    setStatus('ログインしてください 🔑', '');
+  }
+}
+
+function storagePathFromUrl(url) {
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url);
+    const marker = `/${BUCKET}/`;
+    const index = parsed.pathname.indexOf(marker);
+
+    if (index === -1) return null;
+
+    return decodeURIComponent(parsed.pathname.slice(index + marker.length));
+  } catch (error) {
+    return null;
+  }
+}
+
+async function removeImageFile(url) {
+  const path = storagePathFromUrl(url);
+  if (!path) return false;
+
+  const { data, error } = await supabaseClient.storage
+    .from(BUCKET)
+    .remove([path]);
+
+  if (error) {
+    console.warn('画像ファイルを消せませんでした:', error);
+    return false;
+  }
+
+  return Array.isArray(data) && data.length > 0;
+}
+
+function toDateInputValue(value) {
+  if (!value) return '';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+
+  return `${y}-${m}-${d}`;
+}
+
+function dateValueToIso(value) {
+  return new Date(`${value}T12:00:00`).toISOString();
+}
+
+function formatDate(value) {
+  if (!value) return '';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return toDateInputValue(value).replace(/-/g, '.');
+}
+
+function sortNewest(posts) {
+  return [...posts].sort((a, b) => {
+    if (a.created_at || b.created_at) {
+      return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    }
+    if (a.id < b.id) return 1;
+    if (a.id > b.id) return -1;
+    return 0;
+  });
+}
+
+let allPosts = [];
+
+function showListMessage(container, text, isError) {
+  const p = document.createElement('p');
+  p.className = 'list-message' + (isError ? ' is-error' : '');
+  p.textContent = text;
+  container.replaceChildren(p);
+}
+
+async function fetchPosts() {
+  showListMessage(draftListContainer, '読み込み中... ⏳', false);
+  showListMessage(publishedListContainer, '読み込み中... ⏳', false);
+
+  const { data: posts, error } = await supabaseClient
+    .from('posts')
+    .select('*');
+
+  if (error) {
+    console.error(error);
+    showListMessage(draftListContainer, '取得失敗だじょ… ' + error.message, true);
+    showListMessage(publishedListContainer, '取得失敗だじょ… ' + error.message, true);
+    return;
+  }
+
+  allPosts = posts || [];
+  renderLists();
+}
+
+function renderLists() {
+  const drafts = sortNewest(allPosts.filter((post) => post.is_published === false));
+  const published = sortNewest(allPosts.filter((post) => post.is_published !== false));
+
+  renderList(
+    draftListContainer,
+    drafts,
+    '4tagaki（下書き）はありません 🍄'
+  );
+
+  renderList(
+    publishedListContainer,
+    published,
+    '公開中の記事はまだありません 🍄'
+  );
+}
+
+function renderList(container, posts, emptyText) {
+  if (posts.length === 0) {
+    showListMessage(container, emptyText, false);
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+
+  posts.forEach((post) => {
+    fragment.appendChild(buildListItem(post));
+  });
+
+  container.replaceChildren(fragment);
+}
+
+function buildListItem(post) {
+  const item = document.createElement('div');
+  item.className = 'list-item';
+
+  if (editingPost && editingPost.id === post.id) {
+    item.classList.add('is-editing');
+  }
+
+  const box = document.createElement('div');
+
+  const title = document.createElement('div');
+  title.className = 'list-title';
+  title.textContent = post.title || '無題';
+  box.appendChild(title);
+
+  const dateText = formatDate(post.created_at);
+
+  if (dateText) {
+    const date = document.createElement('div');
+    date.className = 'list-date';
+    date.textContent = dateText;
+    box.appendChild(date);
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'item-actions';
+
+  const editButton = document.createElement('button');
+  editButton.type = 'button';
+  editButton.className = 'mini-btn';
+  editButton.textContent = '✏️ 編集';
+  editButton.addEventListener('click', () => startEdit(post));
+
+  const deleteButton = document.createElement('button');
+  deleteButton.type = 'button';
+  deleteButton.className = 'mini-btn delete';
+  deleteButton.textContent = '🗑️ 削除';
+  deleteButton.addEventListener('click', () => deletePost(post, deleteButton));
+
+  actions.append(editButton, deleteButton);
+  item.append(box, actions);
+
+  return item;
+}
+
+let editingPost = null;
+let originalDateValue = '';
+
+function startEdit(post) {
+  editingPost = post;
+  originalDateValue = toDateInputValue(post.created_at);
+
+  titleInput.value = post.title || '';
+  contentInput.value = post.content || '';
+  dateInput.value = originalDateValue;
+  draftCheckbox.checked = post.is_published === false;
+  fileInput.value = '';
+  removeImageCheckbox.checked = false;
+
+  if (post.image_url) {
+    currentImagePreview.src = post.image_url;
+    currentImageBox.classList.remove('hidden');
+    imageNote.textContent = '新しい画像を選ぶと、いまの画像と入れ替わるよ。';
+  } else {
+    currentImageBox.classList.add('hidden');
+    imageNote.textContent = '';
+  }
+
+  editBanner.textContent =
+    '✏️ 編集中：「' + (post.title || '無題') + '」' +
+    (post.is_published === false
+      ? '（4tagaki）。「4tagakiとして保存する」のチェックを外して保存すると、公開されるよ。'
+      : '（公開中）。チェックを入れて保存すると、4tagakiに戻せるよ。');
+  editBanner.classList.remove('hidden');
+
+  submitBtn.textContent = '💾 更新する';
+  cancelBtn.classList.remove('hidden');
+
+  setStatus('編集中だよ ✏️', '');
+  renderLists();
+
+  postForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  titleInput.focus({ preventScroll: true });
+}
+
+function cancelEdit() {
+  editingPost = null;
+  originalDateValue = '';
+
+  postForm.reset();
+
+  currentImageBox.classList.add('hidden');
+  currentImagePreview.removeAttribute('src');
+  imageNote.textContent = '';
+  editBanner.classList.add('hidden');
+  editBanner.textContent = '';
+
+  submitBtn.textContent = '🍄 保存する';
+  cancelBtn.classList.add('hidden');
+
+  renderLists();
+}
+
+cancelBtn.addEventListener('click', () => {
+  cancelEdit();
+  setStatus('編集をやめたよ', '');
+});
+
+async function deletePost(post, button) {
+  const name = post.title || '無題';
+
+  const ok = window.confirm(
+    '「' + name + '」を削除します。\nこの操作は元に戻せません。よろしいですか？'
+  );
+
+  if (!ok) return;
+
+  button.disabled = true;
+  setStatus('削除中... ⏳');
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('posts')
+      .delete()
+      .eq('id', post.id)
+      .select();
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      throw new Error(
+        '削除できませんでした。Supabase の設定（削除の権限）を確認してね。'
+      );
+    }
+
+    let imageLeft = false;
+
+    if (post.image_url) {
+      const removed = await removeImageFile(post.image_url);
+      imageLeft = !removed;
+    }
+
+    if (editingPost && editingPost.id === post.id) {
+      cancelEdit();
+    }
+
+    setStatus(
+      imageLeft
+        ? '🗑️ 記事を削除したよ（画像ファイルは Storage に残っています）'
+        : '🗑️ 削除したよ！',
+      'success'
+    );
+
+    await fetchPosts();
+
+  } catch (error) {
+    console.error(error);
+    setStatus('❌ エラー: ' + error.message, 'error');
+    button.disabled = false;
+  }
+}
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  loginBtn.disabled = true;
+  setStatus('ログイン中... ⏳');
+
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+
+  try {
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+  } catch (error) {
+    setStatus('❌ ログイン失敗: ' + error.message, 'error');
+  } finally {
+    loginBtn.disabled = false;
+  }
+});
+
+logoutBtn.addEventListener('click', async () => {
+  await supabaseClient.auth.signOut();
+});
+
+postForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  submitBtn.disabled = true;
+  setStatus(editingPost ? '更新中... ⏳' : '保存中... ⏳');
+
+  const title = titleInput.value;
+  const content = contentInput.value;
+  const imageFile = fileInput.files[0];
+  const isPublished = !draftCheckbox.checked;
+  const dateValue = dateInput.value;
+
+  const isEditing = Boolean(editingPost);
+
+  let imageUrl = isEditing ? (editingPost.image_url || '') : '';
+  let oldImageToRemove = null;
+
+  try {
+    if (imageFile) {
+      setStatus('画像をアップロード中... 📷');
+
+      const fileExt = imageFile.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabaseClient.storage
+        .from(BUCKET)
+        .upload(fileName, imageFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabaseClient.storage
+        .from(BUCKET)
+        .getPublicUrl(fileName);
+
+      if (isEditing && editingPost.image_url) {
+        oldImageToRemove = editingPost.image_url;
+      }
+
+      imageUrl = publicUrlData.publicUrl;
+
+    } else if (isEditing && removeImageCheckbox.checked && editingPost.image_url) {
+      oldImageToRemove = editingPost.image_url;
+      imageUrl = '';
+    }
+
+    const payload = {
+      title,
+      content,
+      image_url: imageUrl,
+      is_published: isPublished
+    };
+
+    if (dateValue && (!isEditing || dateValue !== originalDateValue)) {
+      payload.created_at = dateValueToIso(dateValue);
+    }
+
+    if (isEditing) {
+      setStatus('記事を更新中... 📝');
+
+      const { data, error } = await supabaseClient
+        .from('posts')
+        .update(payload)
+        .eq('id', editingPost.id)
+        .select();
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        throw new Error(
+          '更新できませんでした。Supabase の設定（更新の権限）を確認してね。'
+        );
+      }
+
+      if (oldImageToRemove) {
+        await removeImageFile(oldImageToRemove);
+      }
+
+      setStatus(
+        isPublished ? '🎉 記事を更新したじょ！' : '📝 4tagakiを更新したじょ！',
+        'success'
+      );
+
+      cancelEdit();
+
+    } else {
+      setStatus('記事を保存中... 📝');
+
+      const { error } = await supabaseClient
+        .from('posts')
+        .insert([payload]);
+
+      if (error) throw error;
+
+      setStatus(
+        isPublished ? '🎉 記事を公開したじょ！' : '📝 4tagakiに保存したじょ！',
+        'success'
+      );
+
+      postForm.reset();
+    }
+
+    await fetchPosts();
+
+  } catch (error) {
+    console.error(error);
+
+    if (error.message && error.message.includes('created_at')) {
+      setStatus(
+        '❌ 日付を保存する列（created_at）が posts にないみたい。SQL で追加するか、日付を空にして保存してね。',
+        'error'
+      );
+    } else {
+      setStatus('❌ エラー: ' + error.message, 'error');
+    }
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+checkAuth();
+
+(() => {
+  const canvas = document.getElementById("spore-canvas");
+  const ctx = canvas.getContext("2d");
+
+  if (!ctx) return;
+
+  let width = 0;
+  let height = 0;
+  let spores = [];
+  let mouseX = 0;
+  let mouseY = 0;
+
+  const colors = [
+    "#ff7ad9",
+    "#4de1ff",
+    "#ffe84a",
+    "#b68cff",
+    "#b6ff5c"
+  ];
+
+  function resize() {
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+
+    width = window.innerWidth;
+    height = window.innerHeight;
+
+    canvas.width = Math.round(width * ratio);
+    canvas.height = Math.round(height * ratio);
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+    const count = Math.min(
+      180,
+      Math.max(60, Math.floor((width * height) / 8500))
+    );
+
+    spores = Array.from({ length: count }, () => createSpore(true));
+  }
+
+  function createSpore(randomY = false) {
+    return {
+      x: Math.random() * width,
+      y: randomY ? Math.random() * height : height + 10,
+      size: Math.random() * 2.1 + 0.5,
+      speed: Math.random() * 0.55 + 0.12,
+      drift: (Math.random() - 0.5) * 0.45,
+      alpha: Math.random() * 0.65 + 0.2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      phase: Math.random() * Math.PI * 2
+    };
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, width, height);
+
+    for (const spore of spores) {
+      spore.phase += 0.015;
+      spore.x += spore.drift + Math.sin(spore.phase) * 0.12;
+      spore.y -= spore.speed;
+
+      if (spore.y < -10) {
+        Object.assign(spore, createSpore(false));
+      }
+
+      if (spore.x < -10) spore.x = width + 10;
+      if (spore.x > width + 10) spore.x = -10;
+
+      const parallaxX = mouseX * 0.012;
+      const parallaxY = mouseY * 0.012;
+
+      ctx.globalAlpha = spore.alpha;
+      ctx.fillStyle = spore.color;
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = spore.color;
+
+      ctx.beginPath();
+      ctx.arc(
+        spore.x + parallaxX,
+        spore.y + parallaxY,
+        spore.size,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+
+    requestAnimationFrame(animate);
+  }
+
+  window.addEventListener("resize", resize, { passive: true });
+
+  window.addEventListener("mousemove", (event) => {
+    mouseX = event.clientX - width / 2;
+    mouseY = event.clientY - height / 2;
+  }, { passive: true });
+
+  resize();
+  animate();
+})();
+
+(() => {
+  const container = document.getElementById("stars");
+  const fragment = document.createDocumentFragment();
+
+  for (let i = 0; i < 50; i++) {
+    const star = document.createElement("span");
+
+    star.textContent = "✦";
+    star.setAttribute("aria-hidden", "true");
+
+    Object.assign(star.style, {
+      position: "absolute",
+      left: Math.random() * 100 + "%",
+      top: Math.random() * 100 + "%",
+      color: i % 2 ? "#4de1ff" : "#ff7ad9",
+      fontSize: Math.random() * 9 + 5 + "px",
+      opacity: String(Math.random() * 0.55 + 0.12),
+      textShadow: "0 0 8px currentColor",
+      animation: `starBlink ${Math.random() * 3 + 2}s ease-in-out infinite alternate`,
+      animationDelay: Math.random() * -5 + "s"
+    });
+
+    fragment.appendChild(star);
+  }
+
+  const style = document.createElement("style");
+  style.textContent = `
+    @keyframes starBlink {
+      from { opacity: 0.12; }
+      to { opacity: 0.85; }
+    }
+  `;
+
+  document.head.appendChild(style);
+  container.appendChild(fragment);
+})();
+
+document.addEventListener("click", (event) => {
+  const colors = ["#ff7ad9", "#4de1ff", "#ffe84a", "#b68cff"];
+
+  for (let i = 0; i < 6; i++) {
+    const spark = document.createElement("span");
+    const angle = Math.PI * 2 * i / 6;
+    const distance = 18 + Math.random() * 24;
+
+    spark.textContent = "✦";
+
+    Object.assign(spark.style, {
+      position: "fixed",
+      left: event.clientX + "px",
+      top: event.clientY + "px",
+      zIndex: "99",
+      pointerEvents: "none",
+      color: colors[i % colors.length],
+      fontSize: "13px",
+      textShadow: "0 0 8px currentColor",
+      transition: "transform 550ms ease-out, opacity 550ms ease-out"
+    });
+
+    document.body.appendChild(spark);
+
+    requestAnimationFrame(() => {
+      spark.style.transform =
+        `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
+      spark.style.opacity = "0";
+    });
+
+    window.setTimeout(() => spark.remove(), 650);
+  }
+});
+
+(() => {
+  const colors = ["#ff65c3", "#b6ff5c", "#62f7ff", "#b68cff", "#ffb85c", "#ffe84a"];
+  const marks = ["✦", "✧", "✨"];
+
+  function sparkle(element) {
+    const rect = element.getBoundingClientRect();
+    const spark = document.createElement("span");
+
+    spark.textContent = marks[Math.floor(Math.random() * marks.length)];
+
+    Object.assign(spark.style, {
+      position: "fixed",
+      left: rect.left + Math.random() * rect.width + "px",
+      top: rect.top + Math.random() * rect.height + "px",
+      zIndex: "99",
+      pointerEvents: "none",
+      color: colors[Math.floor(Math.random() * colors.length)],
+      fontSize: 9 + Math.random() * 10 + "px",
+      textShadow: "0 0 8px currentColor",
+      opacity: "1",
+      transition: "transform 750ms ease-out, opacity 750ms ease-out"
+    });
+
+    document.body.appendChild(spark);
+
+    requestAnimationFrame(() => {
+      const dx = (Math.random() - 0.5) * 44;
+      const dy = -(18 + Math.random() * 32);
+      const rot = (Math.random() - 0.5) * 180;
+      spark.style.transform =
+        `translate(${dx}px, ${dy}px) rotate(${rot}deg) scale(0.4)`;
+      spark.style.opacity = "0";
+    });
+
+    window.setTimeout(() => spark.remove(), 800);
+  }
+
+  function setupSparkle(element) {
+    let timer = null;
+    element.addEventListener("mouseenter", () => {
+      if (timer) return;
+      sparkle(element);
+      timer = window.setInterval(() => sparkle(element), 90);
+    });
+
+    element.addEventListener("mouseleave", () => {
+      window.clearInterval(timer);
+      timer = null;
+    });
+  }
+
+  document.querySelectorAll("h1, .submit-btn, .logout-btn, .cancel-btn, .mini-btn").forEach(setupSparkle);
+})();
+</script>
+</body>
+</html>
