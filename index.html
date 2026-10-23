@@ -83,13 +83,13 @@ body {
 main {
   position: relative;
   z-index: 2;
-  width: min(720px, 92%);
+  width: min(1040px, 94%);
   margin: 0 auto;
   padding: 55px 0 65px;
 }
 
 .big-frame {
-  padding: 34px 26px 36px;
+  padding: 36px 34px 40px;
   border: 2px solid #ff7ad9;
   border-radius: 24px;
   background: rgba(8, 6, 32, 0.25);
@@ -223,13 +223,13 @@ h1 {
 
 #posts-container {
   display: grid;
-  gap: 22px;
+  gap: 26px;
   text-align: left;
 }
 
 .post-card {
   --card-color: #62f7ff;
-  padding: 22px 20px;
+  padding: 26px 28px;
   border: 2px solid var(--card-color);
   border-radius: 16px;
   background: rgba(8, 8, 32, 0.45);
@@ -260,34 +260,130 @@ h1 {
   margin: 0 0 8px;
   color: var(--yellow);
   font-family: monospace;
-  font-size: 0.8rem;
-  letter-spacing: 0.08em;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 8px #ffe84a66;
 }
 
 .post-card h3 {
-  margin: 0 0 14px;
+  margin: 0 0 16px;
   color: #fff;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   line-height: 1.5;
   overflow-wrap: anywhere;
   text-shadow: 0 0 12px var(--card-color);
 }
 
-.post-image {
+.image-button {
+  display: block;
+  max-width: 100%;
+  margin: 0 auto 16px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--card-color) 60%, transparent);
+  border-radius: 10px;
+  background: none;
+  line-height: 0;
+  overflow: hidden;
+  cursor: zoom-in;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.image-button:hover,
+.image-button:focus-visible {
+  box-shadow: 0 0 16px var(--card-color);
+  outline: none;
+}
+
+.image-button:active {
+  transform: scale(0.99);
+}
+
+.image-button img,
+.lightbox-image {
   display: block;
   max-width: 100%;
   height: auto;
-  margin: 0 0 14px;
-  border: 1px solid color-mix(in srgb, var(--card-color) 60%, transparent);
-  border-radius: 10px;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.image-button img {
+  max-height: 620px;
+  margin: 0 auto;
+  object-fit: contain;
 }
 
 .post-content {
   margin: 0;
   color: #f0eaff;
-  line-height: 1.9;
+  font-size: 1.02rem;
+  line-height: 1.95;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  background: rgba(5, 3, 18, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  opacity: 0;
+  visibility: hidden;
+  cursor: zoom-out;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.lightbox.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.lightbox-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+  transform: scale(0.96);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.lightbox.is-open .lightbox-content {
+  transform: scale(1);
+}
+
+.lightbox-image {
+  max-width: 96vw;
+  max-height: calc(100vh - 130px);
+  border-radius: 6px;
+  box-shadow:
+    0 0 12px rgba(255, 255, 255, 0.12),
+    0 0 40px rgba(255, 105, 232, 0.25),
+    0 0 90px rgba(105, 234, 255, 0.14);
+}
+
+.lightbox-caption {
+  margin: 16px 0 0;
+  color: #f5eaff;
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 12px var(--pink);
+  overflow-wrap: anywhere;
+}
+
+.lightbox-hint {
+  margin: 8px 0 0;
+  color: #a99bc8;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
 }
 
 @media (max-width: 600px) {
@@ -303,8 +399,23 @@ h1 {
     padding: 18px 14px;
   }
 
+  .post-card h3 {
+    font-size: 1.15rem;
+  }
+
   .neon-nikki-title {
     max-height: 90px;
+  }
+
+  .lightbox {
+    padding: 30px 8px;
+  }
+}
+
+@media print {
+  .image-button,
+  .lightbox {
+    display: none !important;
   }
 }
 </style>
@@ -329,6 +440,21 @@ h1 {
   </section>
 </main>
 
+<div
+  class="lightbox"
+  id="lightbox"
+  role="dialog"
+  aria-modal="true"
+  aria-label="画像の拡大表示（クリックで閉じる）"
+  aria-hidden="true"
+>
+  <div class="lightbox-content">
+    <img class="lightbox-image" id="lightbox-image" alt="" draggable="false">
+    <p class="lightbox-caption" id="lightbox-caption"></p>
+    <p class="lightbox-hint">CLICK TO CLOSE</p>
+  </div>
+</div>
+
 <script>
 "use strict";
 
@@ -350,7 +476,7 @@ function sortNewestFirst(posts) {
   const list = [...posts];
 
   if (list.some((post) => post.created_at)) {
-    list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
   } else if (list.some((post) => post.id !== undefined && post.id !== null)) {
     list.sort((a, b) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0));
   }
@@ -402,17 +528,28 @@ function buildPostCard(post) {
   const imageUrl = post.image_url ? safeImageUrl(post.image_url) : null;
 
   if (imageUrl) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'image-button';
+    button.setAttribute('aria-label', (post.title || '画像') + ' を拡大表示');
+
     const img = document.createElement('img');
-    img.className = 'post-image';
     img.src = imageUrl;
-    img.alt = post.title || '';
+    img.alt = '';
     img.loading = 'lazy';
+    img.draggable = false;
 
     img.addEventListener('error', () => {
-      img.remove();
+      button.remove();
     });
 
-    card.appendChild(img);
+    button.appendChild(img);
+
+    button.addEventListener('click', () => {
+      openLightbox(imageUrl, post.title || '', button);
+    });
+
+    card.appendChild(button);
   }
 
   const content = document.createElement('p');
@@ -426,7 +563,8 @@ function buildPostCard(post) {
 async function fetchPosts() {
   const { data: posts, error } = await supabaseClient
     .from('posts')
-    .select('*');
+    .select('*')
+    .or('is_published.is.null,is_published.eq.true');
 
   if (error) {
     showMessage('❌ データの取得に失敗しました: ' + error.message, true);
@@ -448,6 +586,53 @@ async function fetchPosts() {
 }
 
 fetchPosts();
+
+const lightbox = document.getElementById('lightbox');
+const lightboxImage = document.getElementById('lightbox-image');
+const lightboxCaption = document.getElementById('lightbox-caption');
+
+let lastFocusedElement = null;
+
+function openLightbox(url, caption, sourceButton) {
+  lastFocusedElement = sourceButton;
+
+  lightboxImage.src = url;
+  lightboxCaption.textContent = caption;
+
+  lightbox.classList.add('is-open');
+  lightbox.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+  lightbox.classList.remove('is-open');
+  lightbox.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+
+  if (lastFocusedElement) {
+    lastFocusedElement.focus({ preventScroll: true });
+  }
+}
+
+lightbox.addEventListener('click', closeLightbox);
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && lightbox.classList.contains('is-open')) {
+    closeLightbox();
+  }
+});
+
+document.addEventListener('contextmenu', (event) => {
+  if (event.target.closest('.image-button, .lightbox')) {
+    event.preventDefault();
+  }
+});
+
+document.addEventListener('dragstart', (event) => {
+  if (event.target.tagName === 'IMG') {
+    event.preventDefault();
+  }
+});
 
 (() => {
   const canvas = document.getElementById("spore-canvas");
@@ -605,7 +790,7 @@ document.addEventListener("click", (event) => {
       position: "fixed",
       left: event.clientX + "px",
       top: event.clientY + "px",
-      zIndex: "99",
+      zIndex: "199",
       pointerEvents: "none",
       color: colors[i % colors.length],
       fontSize: "13px",
