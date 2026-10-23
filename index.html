@@ -47,6 +47,11 @@ body {
   text-align: center;
 }
 
+img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
 #mycelium,
 #spore-canvas,
 #stars {
@@ -457,6 +462,16 @@ h1 {
 
 <script>
 "use strict";
+
+document.addEventListener("contextmenu", (e) => {
+  e.preventDefault();
+});
+
+document.addEventListener("dragstart", (e) => {
+  if (e.target.tagName === "IMG") {
+    e.preventDefault();
+  }
+});
 
 const SUPABASE_URL = 'https://oqfqpzslduwynckdpqqx.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_1O773HFiGqD8A3FOKj5dSA_K2hVYUMh';
