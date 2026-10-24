@@ -284,6 +284,62 @@ h1 {
   object-fit: contain;
 }
 
+.preview-section {
+  margin-top: 15px;
+  text-align: left;
+}
+
+.preview-card {
+  --card-color: #62f7ff;
+  padding: 24px 26px;
+  border: 2px solid var(--card-color);
+  border-radius: 16px;
+  background: rgba(8, 8, 32, 0.65);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--card-color) 50%, transparent);
+}
+
+.preview-date {
+  margin: 0 0 8px;
+  color: var(--yellow);
+  font-family: monospace;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+}
+
+.preview-card h3 {
+  margin: 0 0 16px;
+  color: #fff;
+  font-size: 1.3rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  text-shadow: 0 0 12px var(--card-color);
+}
+
+.preview-img-box {
+  margin-bottom: 16px;
+  border: 1px solid color-mix(in srgb, var(--card-color) 60%, transparent);
+  border-radius: 10px;
+  overflow: hidden;
+  text-align: center;
+}
+
+.preview-img-box img {
+  display: block;
+  max-width: 100%;
+  max-height: 400px;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+.preview-content {
+  margin: 0;
+  color: #f0eaff;
+  font-size: 1.02rem;
+  line-height: 1.95;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .edit-banner {
   padding: 12px 14px;
   border: 1.5px solid var(--yellow);
@@ -548,7 +604,6 @@ h1 {
 
         <div class="field">
           <label for="content">本文✏️</label>
-          <!-- 文字装飾ツールバー -->
           <div class="editor-toolbar">
             <button type="button" class="tool-btn" data-tag="b">太字</button>
             <button type="button" class="tool-btn" data-tag="color" data-val="#ff7ad9">ピンク文字</button>
@@ -582,6 +637,18 @@ h1 {
 
           <input type="file" id="imageFile" accept="image/*">
           <p class="field-note" id="image-note"></p>
+        </div>
+
+        <div class="field preview-section">
+          <label>👁️ リアルタイムプレビュー</label>
+          <div class="preview-card">
+            <p class="preview-date" id="preview-date">2026.10.24</p>
+            <h3 id="preview-title">タイトルがここに表示されるよ</h3>
+            <div class="preview-img-box hidden" id="preview-img-box">
+              <img id="preview-img" alt="プレビュー画像">
+            </div>
+            <div class="preview-content" id="preview-content">本文の見た目がここにリアルタイム反映されるよ！</div>
+          </div>
         </div>
 
         <div class="field">
@@ -649,7 +716,66 @@ const currentImagePreview = document.getElementById('current-image-preview');
 const imageNote = document.getElementById('image-note');
 const editBanner = document.getElementById('edit-banner');
 
-// 装飾ツールバーの処理（タグの重ねがけ対応！）
+const previewTitle = document.getElementById('preview-title');
+const previewContent = document.getElementById('preview-content');
+const previewDate = document.getElementById('preview-date');
+const previewImgBox = document.getElementById('preview-img-box');
+const previewImg = document.getElementById('preview-img');
+
+function formatContentWithTags(rawText) {
+  const text = rawText || '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  let escaped = div.innerHTML;
+
+  let prev;
+  do {
+    prev = escaped;
+    escaped = escaped
+      .replace(/\[b\](.*?)\[\/b\]/g, '<strong style="font-weight: bold; text-shadow: 0 0 6px currentColor;">$1</strong>')
+      .replace(/\[color=(.*?)\](.*?)\[\/color\]/g, '<span style="color: $1; text-shadow: 0 0 8px $1;">$2</span>')
+      .replace(/\[size=(.*?)\](.*?)\[\/size\]/g, '<span style="font-size: $1;">$2</span>');
+  } while (escaped !== prev);
+
+  return escaped;
+}
+
+function updatePreview() {
+  previewTitle.textContent = titleInput.value || 'タイトルがここに表示されるよ';
+  previewContent.innerHTML = formatContentWithTags(contentInput.value) || '本文の見た目がここにリアルタイム反映されるよ！';
+
+  if (dateInput.value) {
+    previewDate.textContent = dateInput.value.replace(/-/g, '.');
+  } else {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    previewDate.textContent = `${y}.${m}.${d}`;
+  }
+
+  if (fileInput.files && fileInput.files[0]) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImg.src = e.target.result;
+      previewImgBox.classList.remove('hidden');
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+  } else if (editingPost && editingPost.image_url && !removeImageCheckbox.checked) {
+    previewImg.src = editingPost.image_url;
+    previewImgBox.classList.remove('hidden');
+  } else {
+    previewImgBox.classList.add('hidden');
+    previewImg.removeAttribute('src');
+  }
+}
+
+titleInput.addEventListener('input', updatePreview);
+contentInput.addEventListener('input', updatePreview);
+dateInput.addEventListener('input', updatePreview);
+fileInput.addEventListener('change', updatePreview);
+removeImageCheckbox.addEventListener('change', updatePreview);
+
 document.querySelectorAll('.tool-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const tag = btn.getAttribute('data-tag');
@@ -671,8 +797,8 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     contentInput.value = text.substring(0, start) + replacement + text.substring(end);
     contentInput.focus();
     
-    // 挿入後も新しく追加したタグを含めて綺麗に選択状態を維持
     contentInput.setSelectionRange(start, start + replacement.length);
+    updatePreview();
   });
 });
 
@@ -921,6 +1047,7 @@ function startEdit(post) {
   cancelBtn.classList.remove('hidden');
 
   setStatus('編集中だよ ✏️', '');
+  updatePreview();
   renderLists();
 
   postForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -942,6 +1069,7 @@ function cancelEdit() {
   submitBtn.textContent = '🍄 保存する';
   cancelBtn.classList.add('hidden');
 
+  updatePreview();
   renderLists();
 }
 
@@ -1124,6 +1252,7 @@ postForm.addEventListener('submit', async (e) => {
       );
 
       postForm.reset();
+      updatePreview();
     }
 
     await fetchPosts();
