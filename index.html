@@ -322,12 +322,52 @@ h1 {
 }
 
 .post-content {
-  margin: 0;
+  margin: 0 0 20px;
   color: #f0eaff;
   font-size: 1.02rem;
   line-height: 1.95;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.share-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px dashed color-mix(in srgb, var(--card-color) 40%, transparent);
+  flex-wrap: wrap;
+}
+
+.share-label {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #bdb5d8;
+  letter-spacing: 0.08em;
+}
+
+.share-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid color-mix(in srgb, var(--card-color) 80%, transparent);
+  border-radius: 8px;
+  background: rgba(12, 10, 40, 0.6);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: bold;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.share-btn:hover {
+  background: var(--card-color);
+  color: #070720;
+  box-shadow: 0 0 12px var(--card-color);
+  transform: translateY(-2px);
 }
 
 .lightbox {
@@ -419,7 +459,8 @@ h1 {
 
 @media print {
   .image-button,
-  .lightbox {
+  .lightbox,
+  .share-area {
     display: none !important;
   }
 }
@@ -523,19 +564,20 @@ function safeImageUrl(url) {
   }
 }
 
-// 文字装飾タグを安全にHTMLに変換する関数
 function formatContentWithTags(rawText) {
   const text = rawText || '';
-  // HTMLエスケープ（安全対策）
   const div = document.createElement('div');
   div.textContent = text;
   let escaped = div.innerHTML;
 
-  // タグの置換
-  escaped = escaped
-    .replace(/\[b\](.*?)\[\/b\]/g, '<strong style="font-weight: bold; text-shadow: 0 0 6px currentColor;">$1</strong>')
-    .replace(/\[color=(.*?)\](.*?)\[\/color\]/g, '<span style="color: $1; text-shadow: 0 0 8px $1;">$2</span>')
-    .replace(/\[size=(.*?)\](.*?)\[\/size\]/g, '<span style="font-size: $1;">$2</span>');
+  let prev;
+  do {
+    prev = escaped;
+    escaped = escaped
+      .replace(/\[b\](.*?)\[\/b\]/g, '<strong style="font-weight: bold; text-shadow: 0 0 6px currentColor;">$1</strong>')
+      .replace(/\[color=(.*?)\](.*?)\[\/color\]/g, '<span style="color: $1; text-shadow: 0 0 8px $1;">$2</span>')
+      .replace(/\[size=(.*?)\](.*?)\[\/size\]/g, '<span style="font-size: $1;">$2</span>');
+  } while (escaped !== prev);
 
   return escaped;
 }
@@ -553,8 +595,9 @@ function buildPostCard(post) {
     card.appendChild(date);
   }
 
+  const titleText = post.title || '無題';
   const title = document.createElement('h3');
-  title.textContent = post.title || '';
+  title.textContent = titleText;
   card.appendChild(title);
 
   const imageUrl = post.image_url ? safeImageUrl(post.image_url) : null;
@@ -563,7 +606,7 @@ function buildPostCard(post) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'image-button';
-    button.setAttribute('aria-label', (post.title || '画像') + ' を拡大表示');
+    button.setAttribute('aria-label', titleText + ' を拡大表示');
 
     const img = document.createElement('img');
     img.src = imageUrl;
@@ -578,7 +621,7 @@ function buildPostCard(post) {
     button.appendChild(img);
 
     button.addEventListener('click', () => {
-      openLightbox(imageUrl, post.title || '', button);
+      openLightbox(imageUrl, titleText, button);
     });
 
     card.appendChild(button);
@@ -586,9 +629,55 @@ function buildPostCard(post) {
 
   const content = document.createElement('div');
   content.className = 'post-content';
-  // 装飾タグを反映させるため innerHTML を使用
   content.innerHTML = formatContentWithTags(post.content || '');
   card.appendChild(content);
+
+  const shareArea = document.createElement('div');
+  shareArea.className = 'share-area';
+
+  const label = document.createElement('span');
+  label.className = 'share-label';
+  label.textContent = 'SHARE ✦';
+  shareArea.appendChild(label);
+
+  const currentUrl = window.location.href;
+
+  const xBtn = document.createElement('a');
+  xBtn.className = 'share-btn';
+  xBtn.target = '_blank';
+  xBtn.rel = 'noopener noreferrer';
+  const xText = encodeURIComponent(`「${titleText}」 - KINOKO-BLOG`);
+  xBtn.href = `https://twitter.com/intent/tweet?text=${xText}&url=${encodeURIComponent(currentUrl)}&hashtags=KINOKO_BLOG`;
+  xBtn.innerHTML = '𝕏 Post';
+  shareArea.appendChild(xBtn);
+
+  const lineBtn = document.createElement('a');
+  lineBtn.className = 'share-btn';
+  lineBtn.target = '_blank';
+  lineBtn.rel = 'noopener noreferrer';
+  const lineText = encodeURIComponent(`「${titleText}」 - KINOKO-BLOG\n${currentUrl}`);
+  lineBtn.href = `https://line.me/R/msg/text/?${lineText}`;
+  lineBtn.innerHTML = '💬 LINE';
+  shareArea.appendChild(lineBtn);
+
+  const copyBtn = document.createElement('button');
+  copyBtn.type = 'button';
+  copyBtn.className = 'share-btn';
+  copyBtn.innerHTML = '🔗 URLコピー';
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(currentUrl);
+      copyBtn.innerHTML = '✨ コピーしたよ！';
+      setTimeout(() => {
+        copyBtn.innerHTML = '🔗 URLコピー';
+      }, 2000);
+    } catch (err) {
+      console.error('コピー失敗:', err);
+    }
+  });
+  shareArea.appendChild(copyBtn);
+
+  card.appendChild(shareArea);
 
   return card;
 }
