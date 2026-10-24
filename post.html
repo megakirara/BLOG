@@ -547,7 +547,7 @@ h1 {
         </div>
 
         <div class="field">
-          <label for="content">本文✏️[cite: 8]</label>
+          <label for="content">本文✏️</label>
           <!-- 文字装飾ツールバー -->
           <div class="editor-toolbar">
             <button type="button" class="tool-btn" data-tag="b">太字</button>
@@ -649,6 +649,7 @@ const currentImagePreview = document.getElementById('current-image-preview');
 const imageNote = document.getElementById('image-note');
 const editBanner = document.getElementById('edit-banner');
 
+// 装飾ツールバーの処理（タグの重ねがけ対応！）
 document.querySelectorAll('.tool-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const tag = btn.getAttribute('data-tag');
@@ -669,7 +670,9 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
 
     contentInput.value = text.substring(0, start) + replacement + text.substring(end);
     contentInput.focus();
-    contentInput.setSelectionRange(start + replacement.length, start + replacement.length);
+    
+    // 挿入後も新しく追加したタグを含めて綺麗に選択状態を維持
+    contentInput.setSelectionRange(start, start + replacement.length);
   });
 });
 
