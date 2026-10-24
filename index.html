@@ -523,6 +523,23 @@ function safeImageUrl(url) {
   }
 }
 
+// 文字装飾タグを安全にHTMLに変換する関数
+function formatContentWithTags(rawText) {
+  const text = rawText || '';
+  // HTMLエスケープ（安全対策）
+  const div = document.createElement('div');
+  div.textContent = text;
+  let escaped = div.innerHTML;
+
+  // タグの置換
+  escaped = escaped
+    .replace(/\[b\](.*?)\[\/b\]/g, '<strong style="font-weight: bold; text-shadow: 0 0 6px currentColor;">$1</strong>')
+    .replace(/\[color=(.*?)\](.*?)\[\/color\]/g, '<span style="color: $1; text-shadow: 0 0 8px $1;">$2</span>')
+    .replace(/\[size=(.*?)\](.*?)\[\/size\]/g, '<span style="font-size: $1;">$2</span>');
+
+  return escaped;
+}
+
 function buildPostCard(post) {
   const card = document.createElement('article');
   card.className = 'post-card';
@@ -567,9 +584,10 @@ function buildPostCard(post) {
     card.appendChild(button);
   }
 
-  const content = document.createElement('p');
+  const content = document.createElement('div');
   content.className = 'post-content';
-  content.textContent = post.content || '';
+  // 装飾タグを反映させるため innerHTML を使用
+  content.innerHTML = formatContentWithTags(post.content || '');
   card.appendChild(content);
 
   return card;

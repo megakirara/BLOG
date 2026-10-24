@@ -86,7 +86,7 @@ textarea {
 main {
   position: relative;
   z-index: 2;
-  width: min(720px, 92%);
+  width: min(760px, 92%);
   margin: 0 auto;
   padding: 55px 0 65px;
 }
@@ -196,8 +196,33 @@ h1 {
 }
 
 #content {
-  min-height: 150px;
+  min-height: 500px;
   resize: vertical;
+}
+
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.tool-btn {
+  padding: 5px 10px;
+  border: 1px solid var(--purple);
+  border-radius: 6px;
+  background: rgba(22, 11, 43, 0.8);
+  color: #f8edff;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+.tool-btn:hover {
+  background: var(--purple);
+  color: #070720;
+  border-color: #fff;
+  transform: translateY(-1px);
 }
 
 #postDate {
@@ -523,7 +548,17 @@ h1 {
 
         <div class="field">
           <label for="content">本文✏️</label>
-          <textarea id="content" rows="6" required></textarea>
+          <!-- 文字装飾ツールバー -->
+          <div class="editor-toolbar">
+            <button type="button" class="tool-btn" data-tag="b">太字</button>
+            <button type="button" class="tool-btn" data-tag="color" data-val="#ff7ad9">ピンク文字</button>
+            <button type="button" class="tool-btn" data-tag="color" data-val="#4de1ff">青文字</button>
+            <button type="button" class="tool-btn" data-tag="color" data-val="#ffe84a">黄文字</button>
+            <button type="button" class="tool-btn" data-tag="color" data-val="#ff7a7a">赤文字</button>
+            <button type="button" class="tool-btn" data-tag="color" data-val="#b6ff5c">緑文字</button>
+            <button type="button" class="tool-btn" data-tag="size" data-val="1.3em">大きめ</button>
+          </div>
+          <textarea id="content" rows="10" required></textarea>
         </div>
 
         <div class="field">
@@ -613,6 +648,30 @@ const currentImageBox = document.getElementById('current-image');
 const currentImagePreview = document.getElementById('current-image-preview');
 const imageNote = document.getElementById('image-note');
 const editBanner = document.getElementById('edit-banner');
+
+document.querySelectorAll('.tool-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tag = btn.getAttribute('data-tag');
+    const val = btn.getAttribute('data-val');
+    const start = contentInput.selectionStart;
+    const end = contentInput.selectionEnd;
+    const text = contentInput.value;
+    const selected = text.substring(start, end);
+
+    let replacement = '';
+    if (tag === 'b') {
+      replacement = `[b]${selected || '太字のテキスト'}[/b]`;
+    } else if (tag === 'color') {
+      replacement = `[color=${val}]${selected || '色付きテキスト'}[/color]`;
+    } else if (tag === 'size') {
+      replacement = `[size=${val}]${selected || '大きなテキスト'}[/size]`;
+    }
+
+    contentInput.value = text.substring(0, start) + replacement + text.substring(end);
+    contentInput.focus();
+    contentInput.setSelectionRange(start + replacement.length, start + replacement.length);
+  });
+});
 
 function setStatus(message, type) {
   status.textContent = message;
@@ -1311,7 +1370,7 @@ document.addEventListener("click", (event) => {
     });
   }
 
-  document.querySelectorAll("h1, .submit-btn, .logout-btn, .cancel-btn, .mini-btn").forEach(setupSparkle);
+  document.querySelectorAll("h1, .submit-btn, .logout-btn, .cancel-btn, .mini-btn, .tool-btn").forEach(setupSparkle);
 })();
 </script>
 </body>
